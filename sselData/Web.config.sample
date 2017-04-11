@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  For more information on how to configure your ASP.NET application, please visit
+  http://go.microsoft.com/fwlink/?LinkId=169433
+  -->
+<configuration>
+  <configSections>
+    <sectionGroup name="lnf">
+      <section name="providers" type="LNF.ProvidersSection, LNF" />
+      <section name="redis" type="LNF.Impl.Redis.RedisConfigurationSection, LNF.Impl" />
+    </sectionGroup>
+  </configSections>
+
+  <lnf>
+    <providers production="false">
+      <context type="LNF.Impl.WebContextProvider, LNF.Impl" loginUrl="/login" />
+      <dataAccess type="LNF.Impl.NHibernateWebDataAccess, LNF.Impl" />
+      <serialization type="LNF.Impl.Serialization.SerializationProvider, LNF.Impl" />
+      <physicalAccess type="LNF.Impl.PhysicalAccess.ProwatchPhysicalAccess, LNF.Impl" />
+      <encryption type="LNF.Impl.EncryptionProvider, LNF.Impl" />
+      <email type="LNF.Impl.Email.EmailProvider, LNF.Impl" host="127.0.0.1" />
+      <log type="LNF.Impl.Logging.ServiceLogProvider, LNF.Impl" name="sselData" enabled="true" />
+      <modelFactory type="LNF.Impl.ModelFactory.ValueInjecterModelFactory, LNF.Impl" />
+    </providers>
+    <redis>
+      <connection host="cachesvr" databaseId="5" />
+    </redis>
+  </lnf>
+
+  <appSettings>
+    <add key="ShowMenu" value="false" />
+    <add key="AddClientToAccount.PrivFilter" value="Lab User,Staff,Store User,Remote User" />
+    <add key="MongoConnectionString" value="mongodb://*****:*****@localhost/" />
+    <add key="ValidationSettings:UnobtrusiveValidationMode" value="None" />
+  </appSettings>
+
+  <connectionStrings>
+    <add name="cnSselData" providerName="System.Data.SqlClient" connectionString="Server=*****;Database=*****;User ID=*****;Password=*****" />
+    <add name="cnProwatch" providerName="System.Data.SqlClient" connectionString="Server=*****;Database=*****;User ID=*****;Password=*****" />
+  </connectionStrings>
+
+  <system.web>
+    <compilation debug="true" targetFramework="4.6.1" />
+    <httpRuntime targetFramework="4.6.1" />
+
+    <pages controlRenderingCompatibilityVersion="4.0">
+      <controls>
+        <add assembly="LNF.Web" namespace="LNF.Web.Controls" tagPrefix="lnf" />
+      </controls>
+    </pages>
+
+    <authentication mode="Forms">
+      <forms name="sselAuth.cookie" path="/" loginUrl="/login" timeout="480" protection="All" slidingExpiration="true" domain="umich.edu" cookieless="UseCookies" />
+    </authentication>
+
+    <authorization>
+      <deny users="?" />
+    </authorization>
+
+    <machineKey compatibilityMode="Framework20SP2" validationKey="*****" decryptionKey="*****" validation="SHA1" decryption="3DES" />
+
+    <xhtmlConformance mode="Legacy" />
+
+    <customErrors mode="Off" />
+  </system.web>
+</configuration>

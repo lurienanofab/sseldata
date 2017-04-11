@@ -1,0 +1,32 @@
+﻿.address-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 8pt;
+    border: solid 1px #808080;
+}
+
+    .address-table thead th {
+        padding: 2px;
+        text-align: center;
+        background-color: #D3D3D3;
+        border: none;
+        vertical-align: middle;
+    }
+
+    .address-table tbody td {
+        padding: 2px;
+        border-bottom: solid 1px #CCCCCC;
+    }
+
+    .address-table tbody .editing {
+        background-color: #9bded6;
+    }
+
+    .address-table tfoot td {
+        padding: 2px;
+        background-color: #D3D3D3;
+    }
+
+    .address-table tfoot .add-button{
+        font-size: 8pt;
+    }
