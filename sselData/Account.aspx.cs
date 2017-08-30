@@ -119,7 +119,8 @@ namespace sselData
                         daClient.SelectCommand.Parameters.AddWithValue("@Action", "AllWithStatus");
                         daClient.Fill(dsAccount, "Client");
 
-                        dsAccount.Tables["Client"].PrimaryKey = new[] { dsAccount.Tables["Client"].Columns["ClientID"] };
+                        var dtClient = dsAccount.Tables["Client"];
+                        dtClient.PrimaryKey = new[] { dtClient.Columns["ClientID"] };
                     }
 
                     // get Org info

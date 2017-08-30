@@ -10,7 +10,7 @@
 namespace sselData {
     
     
-    public partial class index {
+    public partial class Index {
         
         /// <summary>
         /// ddlOrg control.

@@ -9,7 +9,7 @@ using System.Web.UI.WebControls;
 
 namespace sselData
 {
-    public partial class index : LNF.Web.Content.LNFPage
+    public partial class Index : LNF.Web.Content.LNFPage
     {
         public override ClientPrivilege AuthTypes
         {

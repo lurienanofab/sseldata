@@ -1,5 +1,8 @@
 ﻿using LNF.Impl;
 using System.Web.Routing;
+using Microsoft.Owin;
+
+[assembly: OwinStartup(typeof(sselData.Startup))]
 
 namespace sselData
 {
