@@ -103,13 +103,13 @@ namespace sselData {
         protected global::System.Web.UI.WebControls.TextBox txtShortCode;
         
         /// <summary>
-        /// lbtnReactivateByShortCode control.
+        /// ReactivateByShortCodeLinkButton control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lbtnReactivateByShortCode;
+        protected global::System.Web.UI.WebControls.LinkButton ReactivateByShortCodeLinkButton;
         
         /// <summary>
         /// pExtAccount control.
@@ -247,40 +247,31 @@ namespace sselData {
         protected global::System.Web.UI.WebControls.ObjectDataSource odsAccountType;
         
         /// <summary>
-        /// AddressManager1 control.
+        /// AccountManagerDataGrid control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::sselData.Controls.AddressManager AddressManager1;
+        protected global::System.Web.UI.WebControls.DataGrid AccountManagerDataGrid;
         
         /// <summary>
-        /// dgAccountManager control.
+        /// AccountStoreButton control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DataGrid dgAccountManager;
+        protected global::System.Web.UI.WebControls.Button AccountStoreButton;
         
         /// <summary>
-        /// btnAccountStore control.
+        /// AccountStoreQuitButton control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnAccountStore;
-        
-        /// <summary>
-        /// btnAccountStoreQuit control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnAccountStoreQuit;
+        protected global::System.Web.UI.WebControls.Button AccountStoreQuitButton;
         
         /// <summary>
         /// pExisting control.
@@ -301,13 +292,13 @@ namespace sselData {
         protected global::System.Web.UI.HtmlControls.HtmlTable Table4;
         
         /// <summary>
-        /// rblAcctDisplay control.
+        /// AcctDisplayRadioButtonList control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.RadioButtonList rblAcctDisplay;
+        protected global::System.Web.UI.WebControls.RadioButtonList AcctDisplayRadioButtonList;
         
         /// <summary>
         /// txtSearch control.
@@ -319,31 +310,31 @@ namespace sselData {
         protected global::System.Web.UI.WebControls.TextBox txtSearch;
         
         /// <summary>
-        /// ddlAccount control.
+        /// AccountDropDownList control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlAccount;
+        protected global::System.Web.UI.WebControls.DropDownList AccountDropDownList;
         
         /// <summary>
-        /// btnAccountReenable control.
+        /// AccountReenableButton control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnAccountReenable;
+        protected global::System.Web.UI.WebControls.Button AccountReenableButton;
         
         /// <summary>
-        /// btnAccountReenableQuit control.
+        /// AccountReenableQuitButton control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnAccountReenableQuit;
+        protected global::System.Web.UI.WebControls.Button AccountReenableQuitButton;
         
         /// <summary>
         /// pAccountList control.
@@ -355,39 +346,39 @@ namespace sselData {
         protected global::System.Web.UI.WebControls.Panel pAccountList;
         
         /// <summary>
-        /// dgAccount control.
+        /// AccountDataGrid control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DataGrid dgAccount;
+        protected global::System.Web.UI.WebControls.DataGrid AccountDataGrid;
         
         /// <summary>
-        /// ddlPager control.
+        /// PagerDropDownList control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlPager;
+        protected global::System.Web.UI.WebControls.DropDownList PagerDropDownList;
         
         /// <summary>
-        /// btnSave control.
+        /// SaveButton control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnSave;
+        protected global::System.Web.UI.WebControls.Button SaveButton;
         
         /// <summary>
-        /// btnDiscard control.
+        /// DiscardButton control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnDiscard;
+        protected global::System.Web.UI.WebControls.Button DiscardButton;
     }
 }

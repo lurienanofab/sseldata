@@ -1,32 +1,64 @@
-﻿.address-table {
+﻿.address-manager .address-table {
     border-collapse: collapse;
-    width: 100%;
-    font-size: 8pt;
+    /*width: 100%;*/
+    font-size: 13px;
     border: solid 1px #808080;
+    table-layout: fixed;
 }
 
-    .address-table thead th {
-        padding: 2px;
+    .address-manager .address-table > thead > tr > th {
+        padding: 5px;
         text-align: center;
         background-color: #D3D3D3;
-        border: none;
         vertical-align: middle;
+        border: none;
+        overflow: hidden;
     }
 
-    .address-table tbody td {
+    .address-manager .address-table > tbody > tr > td {
+        padding: 5px;
+        vertical-align: middle;
+        /*border-bottom: solid 1px #CCCCCC;*/
+        border: solid 1px #ccc;
+        overflow: hidden;
+    }
+
+.address-manager .address-entry:nth-child(even) {
+    background-color: #faf0e6;
+}
+
+.address-manager .address-entry.editing {
+    background-color: #66ffff;
+}
+
+.address-manager .address-entry .entry-controls {
+    text-align: center;
+}
+
+    .address-manager .address-entry .entry-controls .add,
+    .address-manager .address-entry .entry-controls .edit-delete,
+    .address-manager .address-entry .entry-controls .update-cancel {
+        display: none;
+    }
+
+    .address-manager .address-entry .entry-controls .add-address-button {
+        margin: 5px;
         padding: 2px;
-        border-bottom: solid 1px #CCCCCC;
+        font-size: smaller;
     }
 
-    .address-table tbody .editing {
-        background-color: #9bded6;
+    .address-manager .address-entry .entry-controls .update-cancel {
+        margin-top: 5px;
     }
 
-    .address-table tfoot td {
-        padding: 2px;
-        background-color: #D3D3D3;
-    }
+.address-manager .address-entry input,
+.address-manager .address-entry select,
+.address-manager .address-entry button {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
 
-    .address-table tfoot .add-button{
-        font-size: 8pt;
-    }
+.address-manager .property-text {
+    width: 100%;
+}

@@ -48,8 +48,8 @@ namespace sselData
 
         public int AccountID
         {
-            get { return int.Parse(hidAccountID.Value); }
-            set { hidAccountID.Value = value.ToString(); }
+            get { return Session["EditAccountID"] == null ? 0 : (int)Session["EditAccountID"]; }
+            set { Session["EditAccountID"] = value; }
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -72,6 +72,8 @@ namespace sselData
             else
             {
                 CacheManager.Current.RemoveCacheData(); // remove anything left in cache
+
+                AccountID = 0;
 
                 using (SqlConnection cnSselData = new SqlConnection(ConfigurationManager.ConnectionStrings["cnSselData"].ConnectionString))
                 {
@@ -216,7 +218,6 @@ namespace sselData
                         daAddress.Fill(dsAccount, "Address");
 
                         dsAccount.Tables["Address"].Columns.Add("AddressType", typeof(string));
-                        dsAccount.Tables["Address"].Columns.Add("AddDelete", typeof(bool));
                     }
 
                     //Declare default sort parameter and sort direction
@@ -254,32 +255,31 @@ namespace sselData
                 DataView dv = dsAccount.Tables["Account"].DefaultView;
                 dv.Sort = ViewState["dgAccountSortCol"].ToString() + ViewState["dgAccountSortDir"].ToString();
                 dv.RowFilter = "Active = 1";
-                dgAccount.DataSource = dv;
-                dgAccount.DataBind();
+                AccountDataGrid.DataSource = dv;
+                AccountDataGrid.DataBind();
 
                 if (OrgIsInternal()) // yuck - what if the number of columns change?
                 {
-                    dgAccount.Columns[2].Visible = true;
-                    dgAccount.Columns[3].Visible = true;
+                    AccountDataGrid.Columns[2].Visible = true;
+                    AccountDataGrid.Columns[3].Visible = true;
                 }
                 else
                 {
-                    dgAccount.Columns[2].Visible = false;
-                    dgAccount.Columns[3].Visible = false;
+                    AccountDataGrid.Columns[2].Visible = false;
+                    AccountDataGrid.Columns[3].Visible = false;
                 }
 
                 // now, add to ddlPager for paging
-                ddlPager.Items.Clear();
-                int pSize = dgAccount.PageSize;
+                PagerDropDownList.Items.Clear();
+                int pSize = AccountDataGrid.PageSize;
                 for (int i = 0; i < dv.Count; i += pSize)
                 {
-                    ListItem pagerItem = new ListItem();
-                    pagerItem.Value = (i / pSize).ToString();
+                    ListItem pagerItem = new ListItem { Value = (i / pSize).ToString() };
                     int index = (i + (pSize - 1) >= dv.Count) ? dv.Count - 1 : i + (pSize - 1);
                     pagerItem.Text = dv[i].Row[ViewState["dgAccountSortCol"].ToString()].ToString() + " ... " + dv[index].Row[ViewState["dgAccountSortCol"].ToString()].ToString();
-                    ddlPager.Items.Add(pagerItem);
+                    PagerDropDownList.Items.Add(pagerItem);
                 }
-                ddlPager.SelectedValue = dgAccount.CurrentPageIndex.ToString();
+                PagerDropDownList.SelectedValue = AccountDataGrid.CurrentPageIndex.ToString();
             }
             else if (pAddEdit.Visible)
             {
@@ -303,167 +303,127 @@ namespace sselData
                     SetFocus(txtNumber);
                 }
 
-                var addressItems = GetAddressManagerDataSource();
+                //var addressItems = GetAddressManagerDataSource();
 
                 // turn off dgAddress control when editing an address
-                if (inlineAddressEdit || addressItems.Count == AddressManager1.AddressTypes.Count)
-                    AddressManager1.ShowFooter = false;
-                else
-                    AddressManager1.ShowFooter = true;
+                //if (inlineAddressEdit || addressItems.Count == AddressManager1.AddressTypes.Count)
+                //    AddressManager1.ShowFooter = false;
+                //else
+                //    AddressManager1.ShowFooter = true;
 
-                AddressManager1.Fill(addressItems);
+                //AddressManager1.Fill(addressItems);
 
                 // filter the managers
                 DataView dvm = dsAccount.Tables["ClientAccount"].DefaultView;
-                dvm.RowFilter = string.Format("Active = 1 AND Manager = 1 AND AccountID = {0}", AccountID);
-                dgAccountManager.DataSource = dvm;
-                dgAccountManager.DataBind();
+                dvm.RowFilter = $"Active = 1 AND Manager = 1 AND AccountID = {AccountID}";
+                AccountManagerDataGrid.DataSource = dvm;
+                AccountManagerDataGrid.DataBind();
             }
             else if (pExisting.Visible)
                 lblHeader.Text = "Add existing Account to " + dr["OrgName"].ToString();
         }
 
-        private IList<AddressItem> GetAddressManagerDataSource()
-        {
-            List<AddressItem> result = new List<AddressItem>();
-            DataView dv = GetAddressDataSource();
-
-            if (dv != null)
-            {
-                foreach (DataRowView drv in dv)
-                {
-                    string typeColumn = drv["AddressType"].ToString();
-                    string typeName = AddressManager1.AddressTypes.First(x => x.Column == typeColumn).Name;
-
-                    result.Add(new AddressItem()
-                    {
-                        AddressID = Convert.ToInt32(drv["AddressID"]),
-                        Type = new AddressType() { Column = typeColumn, Name = typeName },
-                        AttentionLine = drv["InternalAddress"].ToString(),
-                        StreetAddressLine1 = drv["StrAddress1"].ToString(),
-                        StreetAddressLine2 = drv["StrAddress2"].ToString(),
-                        City = drv["City"].ToString(),
-                        State = drv["State"].ToString(),
-                        Zip = drv["Zip"].ToString(),
-                        Country = drv["Country"].ToString()
-                    });
-                }
-            }
-
-            return result;
-        }
-
-        private DataView GetAddressDataSource()
-        {
-            // filter the addresses
-            DataView dv = dsAccount.Tables["Address"].DefaultView;
-
-            if (AccountID == 0)
-            {
-                // a new client must have a newly added address, if any
-                dv.RowFilter = "AddDelete = 1";
-            }
-            else
-            {
-                // set addresstype and create row filter
-                DataRow adr = dsAccount.Tables["Account"].Rows.Find(AccountID);
-
-                string filter = string.Empty;
-                MakeAddrFilter(ref filter, adr, "BillAddressID");
-                MakeAddrFilter(ref filter, adr, "ShipAddressID");
-
-                // if affiliated with this org, this row must exist
-                dv.RowFilter = string.Format("AddDelete = 1{0}", filter);
-            }
-
-            return dv;
-        }
-
-        private void MakeAddrFilter(ref string filter, DataRow dr, string addrType)
-        {
-            if (Convert.ToInt32(dr[addrType]) != 0)
-            {
-                DataRow adr = dsAccount.Tables["Address"].Rows.Find(dr[addrType]);
-                if (adr != null)
-                {
-                    adr["AddressType"] = addrType;
-                    // to prevent unnecessary writes to the DB
-                    if (adr.RowState == DataRowState.Unchanged)
-                        adr.AcceptChanges();
-                    filter += string.Format(" OR AddressID = {0}", dr[addrType]);
-                }
-            }
-        }
-
-        protected void dgAccount_ItemCommand(object source, DataGridCommandEventArgs e)
+        protected void AccountDataGrid_ItemCommand(object source, DataGridCommandEventArgs e)
         {
             DataRow dr;
 
             switch (e.CommandName)
             {
                 case "AddNew":
-                    txtAccount.Text = string.Empty;
-                    txtFund.Text = string.Empty;
-                    txtDepartment.Text = string.Empty;
-                    txtProgram.Text = string.Empty;
-                    txtClass.Text = string.Empty;
-                    txtProject.Text = string.Empty;
-                    txtNumber.Text = string.Empty;
-                    txtShortCode.Text = string.Empty;
-
-                    txtName.Text = string.Empty;
-                    ddlFundingSource.ClearSelection();
-                    ddlTechnicalField.ClearSelection();
-                    ddlSpecialTopic.ClearSelection();
-
-                    txtInvoiceNumber.Text = string.Empty;
-                    txtInvoiceLine1.Text = string.Empty;
-                    txtInvoiceLine2.Text = string.Empty;
-                    txtPoEndDate.Text = string.Empty;
-                    txtPoInitialFunds.Text = string.Empty;
-
-                    //2010-03-07 add account type to distinguish between regular, limited and IOF only
-                    if (cklistAccountType.Items.Count == 0)
-                        cklistAccountType.DataBind();
-
-                    cklistAccountType.Items[0].Selected = true;
-
-                    // remove any existing rows with AddDelete == true
-                    DataRow[] rows = dsAccount.Tables["Address"].Select("AddDelete = 1");
-
-                    foreach (DataRow drAddr in rows)
+                    if (AccountID == 0)
                     {
-                        drAddr.Delete();
-                    }
+                        txtAccount.Text = string.Empty;
+                        txtFund.Text = string.Empty;
+                        txtDepartment.Text = string.Empty;
+                        txtProgram.Text = string.Empty;
+                        txtClass.Text = string.Empty;
+                        txtProject.Text = string.Empty;
+                        txtNumber.Text = string.Empty;
+                        txtShortCode.Text = string.Empty;
 
-                    // if org has DefBillAddr or DefShipAddr, add row to addr table with this info
-                    DataRow drOrg = dsAccount.Tables["Org"].Rows.Find(Session["OrgID"]);
+                        txtName.Text = string.Empty;
+                        ddlFundingSource.ClearSelection();
+                        ddlTechnicalField.ClearSelection();
+                        ddlSpecialTopic.ClearSelection();
 
-                    foreach (var addrType in AddressManager1.AddressTypes)
-                    {
-                        string defaultColumn = string.Format("Def{0}", addrType.Column);
+                        txtInvoiceNumber.Text = string.Empty;
+                        txtInvoiceLine1.Text = string.Empty;
+                        txtInvoiceLine2.Text = string.Empty;
+                        txtPoEndDate.Text = string.Empty;
+                        txtPoInitialFunds.Text = string.Empty;
 
-                        if (Convert.ToInt32(drOrg[defaultColumn]) != 0)
+                        //2010-03-07 add account type to distinguish between regular, limited and IOF only
+                        if (cklistAccountType.Items.Count == 0)
+                            cklistAccountType.DataBind();
+
+                        cklistAccountType.Items[0].Selected = true;
+
+                        var newAccountRow = dsAccount.Tables["Account"].NewRow();
+                        newAccountRow.SetField("OrgID", Convert.ToInt32(Session["OrgID"]));
+                        newAccountRow.SetField("Name", "");
+                        newAccountRow.SetField("AccountTypeID", 1);
+                        newAccountRow.SetField("Number", "");
+                        newAccountRow.SetField("ShortCode", "");
+                        newAccountRow.SetField("FundingSourceID", 1);
+                        newAccountRow.SetField("TechnicalFieldID", 1);
+                        newAccountRow.SetField("SpecialTopicID", 1);
+                        newAccountRow.SetField("BillAddressID", 0);
+                        newAccountRow.SetField("ShipAddressID", 0);
+                        newAccountRow.SetField("InvoiceNumber", "");
+                        newAccountRow.SetField("InvoiceLine1", "");
+                        newAccountRow.SetField("InvoiceLine2", "");
+                        newAccountRow.SetField("PoEndDate", DBNull.Value);
+                        newAccountRow.SetField("PoInitialFunds", DBNull.Value);
+                        newAccountRow.SetField("PoRemainingFunds", DBNull.Value);
+                        newAccountRow.SetField("Active", true);
+                        dsAccount.Tables["Account"].Rows.Add(newAccountRow);
+
+                        // remove any added rows
+                        // if we are adding mulitple accounts before the final save, we don't want to remove addresses that were added.
+                        //var rows = dsAccount.Tables["Address"].AsEnumerable().Where(x => x.RowState == DataRowState.Added).ToArray();
+                        //foreach (DataRow drAddr in rows)
+                        //{
+                        //    drAddr.RejectChanges();
+                        //}
+
+                        // if org has DefBillAddr or DefShipAddr, add row to addr table with this info
+                        DataRow drOrg = dsAccount.Tables["Org"].Rows.Find(Session["OrgID"]);
+                        string[] addressTypes = { "BillAddressID", "ShipAddressID" };
+
+                        foreach (var addrType in addressTypes)
                         {
-                            DataRow ndr = dsAccount.Tables["Address"].NewRow();
-                            int addressId = Convert.ToInt32(ndr["AddressID"]);
-                            ndr.ItemArray = dsAccount.Tables["Address"].Rows.Find(drOrg[defaultColumn]).ItemArray;
-                            ndr["AddressID"] = addressId;
-                            ndr["AddressType"] = addrType.Column;
-                            ndr["AddDelete"] = true;
-                            dsAccount.Tables["Address"].Rows.Add(ndr);
+                            string defaultColumn = string.Format("Def{0}", addrType);
+
+                            if (drOrg.Field<int>(defaultColumn) > 0)
+                            {
+                                var newAddressRow = dsAccount.Tables["Address"].NewRow();
+                                var defaultAddress = dsAccount.Tables["Address"].Rows.Find(drOrg.Field<int>(defaultColumn));
+                                if (defaultAddress != null)
+                                {
+                                    newAddressRow.SetField("InternalAddress", defaultAddress.Field<string>("InternalAddress"));
+                                    newAddressRow.SetField("StrAddress1", defaultAddress.Field<string>("StrAddress1"));
+                                    newAddressRow.SetField("StrAddress2", defaultAddress.Field<string>("StrAddress2"));
+                                    newAddressRow.SetField("City", defaultAddress.Field<string>("City"));
+                                    newAddressRow.SetField("State", defaultAddress.Field<string>("State"));
+                                    newAddressRow.SetField("Zip", defaultAddress.Field<string>("Zip"));
+                                    newAddressRow.SetField("Country", defaultAddress.Field<string>("Country"));
+                                    newAddressRow.SetField("AddressType", addrType);
+                                    dsAccount.Tables["Address"].Rows.Add(newAddressRow);
+                                    newAccountRow.SetField(addrType, newAddressRow.Field<int>("AddressID"));
+                                }
+                            }
                         }
+
+                        AccountID = newAccountRow.Field<int>("AccountID");
+                        AccountStoreButton.Text = "Store New Account";
+
+                        CacheManager.Current.CacheData(dsAccount);
                     }
-
-                    AccountID = 0;
-                    btnAccountStore.Text = "Store New Account";
-
-                    CacheManager.Current.CacheData(dsAccount);
 
                     SetPageControlsAndBind(true, false, false);
                     break;
                 case "Edit":
-                    int accountId = Convert.ToInt32(dgAccount.DataKeys[e.Item.ItemIndex]);
+                    int accountId = Convert.ToInt32(AccountDataGrid.DataKeys[e.Item.ItemIndex]);
                     dr = dsAccount.Tables["Account"].Rows.Find(accountId);
 
                     if (OrgIsInternal())
@@ -483,7 +443,7 @@ namespace sselData
                         txtInvoiceLine1.Text = WebUtility.FillField(dr["InvoiceLine1"], string.Empty);
                         txtInvoiceLine2.Text = WebUtility.FillField(dr["InvoiceLine2"], string.Empty);
                         txtPoEndDate.Text = WebUtility.FillField(dr["PoEndDate"], string.Empty);
-                        txtPoInitialFunds.Text = WebUtility.FillField(dr["PoInitialFunds"], string.Empty);
+                        txtPoInitialFunds.Text = WebUtility.FillField<decimal>(dr["PoInitialFunds"], 0, "{0:0.00}");
                     }
 
                     txtName.Text = dr["Name"].ToString();
@@ -502,19 +462,19 @@ namespace sselData
                     }
 
                     AccountID = accountId;
-                    btnAccountStore.Text = "Store Modified Data";
+                    AccountStoreButton.Text = "Store Modified Data";
 
                     CacheManager.Current.CacheData(dsAccount);
 
                     SetPageControlsAndBind(true, false, false);
                     break;
                 case "AddExisting":
-                    ddlAccount.Enabled = true;
+                    AccountDropDownList.Enabled = true;
                     SetAccountDDL();
                     SetPageControlsAndBind(false, true, false);
                     break;
                 case "Delete":
-                    accountId = Convert.ToInt32(dgAccount.DataKeys[e.Item.ItemIndex]);
+                    accountId = Convert.ToInt32(AccountDataGrid.DataKeys[e.Item.ItemIndex]);
                     dr = dsAccount.Tables["Account"].Rows.Find(accountId);
                     DataRow[] adr = dsAccount.Tables["Address"].Select(string.Format("AddressID = {0} OR AddressID = {1}", dr["BillAddressID"], dr["ShipAddressID"]));
 
@@ -571,7 +531,7 @@ namespace sselData
             }
         }
 
-        protected void dgAccount_ItemDataBound(object sender, DataGridItemEventArgs e)
+        protected void AccountDataGrid_ItemDataBound(object sender, DataGridItemEventArgs e)
         {
             if (e.Item.ItemType == ListItemType.AlternatingItem || e.Item.ItemType == ListItemType.Item)
             {
@@ -598,16 +558,16 @@ namespace sselData
                     ((Label)e.Item.FindControl("lblNumber")).Text = drv["Number"].ToString();
 
                 //2007-02-03 Post the javascript to warn user if they are deleting accounts that still have clientOrgs who has only one single account in this org
-                int AccountID = Convert.ToInt32(dgAccount.DataKeys[e.Item.ItemIndex]);
-                DataRow[] cadrs = dsAccount.Tables["ClientAccount"].Select(string.Format("Active = 1 AND AccountID = {0}", AccountID));
+                int AccountID = Convert.ToInt32(AccountDataGrid.DataKeys[e.Item.ItemIndex]);
+                DataRow[] cadrs = dsAccount.Tables["ClientAccount"].Select($"Active = 1 AND AccountID = {AccountID}");
                 if (cadrs.Length > 0)
                 {
                     foreach (DataRow dr in cadrs)
                     {
-                        DataRow[] OneAccountUser = dsAccount.Tables["OneClientAccount"].Select(string.Format("ClientOrgID = {0}", dr["ClientOrgID"]));
+                        DataRow[] OneAccountUser = dsAccount.Tables["OneClientAccount"].Select($"ClientOrgID = {dr["ClientOrgID"]}");
                         if (OneAccountUser.Length >= 1)
                         {
-                            string script = string.Format("return confirm('There are still {0} client(s) associated ONLY with this account, are you sure you want to delete this account?');", OneAccountUser.Length);
+                            string script = $"return confirm('There are still {OneAccountUser.Length} client(s) associated ONLY with this account, are you sure you want to delete this account?');";
                             ImageButton lbtn = (ImageButton)e.Item.FindControl("btnDelete");
                             lbtn.OnClientClick = script;
                         }
@@ -616,13 +576,13 @@ namespace sselData
             }
         }
 
-        protected void ddlPager_SelectedIndexChanged(object sender, EventArgs e)
+        protected void PagerDropDownList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            dgAccount.CurrentPageIndex = Convert.ToInt32(ddlPager.SelectedValue); // selectedItem should also work
+            AccountDataGrid.CurrentPageIndex = Convert.ToInt32(PagerDropDownList.SelectedValue); // selectedItem should also work
             SetPageControlsAndBind(false, false, false);
         }
 
-        protected void dgAccount_SortCommand(object source, DataGridSortCommandEventArgs e)
+        protected void AccountDataGrid_SortCommand(object source, DataGridSortCommandEventArgs e)
         {
             if (ViewState["dgAccountSortCol"].ToString() == e.SortExpression)
             {
@@ -641,7 +601,7 @@ namespace sselData
             SetPageControlsAndBind(false, false, false);
         }
 
-        protected void rblAcctDisplay_SelectedIndexChanged(object sender, EventArgs e)
+        protected void AcctDisplayRadioButtonList_SelectedIndexChanged(object sender, EventArgs e)
         {
             SetAccountDDL();
         }
@@ -649,35 +609,33 @@ namespace sselData
         private void SetAccountDDL()
         {
             DataView dv = dsAccount.Tables["Account"].DefaultView;
-            dv.Sort = rblAcctDisplay.SelectedValue + " ASC";
+            dv.Sort = AcctDisplayRadioButtonList.SelectedValue + " ASC";
             dv.RowFilter = "Active = 0";
 
-            ddlAccount.DataSource = dv;
-            ddlAccount.DataTextField = rblAcctDisplay.SelectedValue;
-            ddlAccount.DataValueField = "AccountID";
-            ddlAccount.DataBind();
+            AccountDropDownList.DataSource = dv;
+            AccountDropDownList.DataTextField = AcctDisplayRadioButtonList.SelectedValue;
+            AccountDropDownList.DataValueField = "AccountID";
+            AccountDropDownList.DataBind();
 
             // now, go through and remove items that do not meet the filters
-            for (int i = ddlAccount.Items.Count - 1; i >= 0; i--)
+            for (int i = AccountDropDownList.Items.Count - 1; i >= 0; i--)
             {
                 // only match specified text
                 if (txtSearch.Text.Trim().Length > 0)
-                    if (!ddlAccount.Items[i].Text.ToLower().Contains(txtSearch.Text.Trim().ToLower()))
-                        ddlAccount.Items.Remove(ddlAccount.Items[i]);
+                    if (!AccountDropDownList.Items[i].Text.ToLower().Contains(txtSearch.Text.Trim().ToLower()))
+                        AccountDropDownList.Items.Remove(AccountDropDownList.Items[i]);
             }
 
             // now add a blank item so SelectedIndexChnaged works for the first name in the list
-            ListItem blankItem = new ListItem();
-            blankItem.Value = "0";
-            blankItem.Text = string.Empty;
-            ddlAccount.Items.Insert(0, blankItem);
+            ListItem blankItem = new ListItem { Value = "0", Text = string.Empty };
+            AccountDropDownList.Items.Insert(0, blankItem);
         }
 
-        protected void ddlAccount_PreRender(object sender, EventArgs e)
+        protected void AccountDropDownList_PreRender(object sender, EventArgs e)
         {
-            if (rblAcctDisplay.SelectedValue == "Number")
+            if (AcctDisplayRadioButtonList.SelectedValue == "Number")
             {
-                foreach (ListItem li in ddlAccount.Items)
+                foreach (ListItem li in AccountDropDownList.Items)
                 {
                     if (li.Text.Length > 0)
                         li.Text = li.Text.Substring(0, 6) + "-" + li.Text.Substring(6, 5) + "-" + li.Text.Substring(11, 6) + "-" + li.Text.Substring(17, 5) + "-" + li.Text.Substring(22, 5) + "-" + li.Text.Substring(27, 7);
@@ -685,13 +643,13 @@ namespace sselData
             }
         }
 
-        protected void btnAccountReenable_Click(object sender, EventArgs e)
+        protected void AccountReenableButton_Click(object sender, EventArgs e)
         {
-            DataRow adr = dsAccount.Tables["Account"].Rows.Find(ddlAccount.SelectedValue);
+            DataRow adr = dsAccount.Tables["Account"].Rows.Find(AccountDropDownList.SelectedValue);
             if (adr.RowState == DataRowState.Modified) // must have just been disabled
             {
                 adr.RejectChanges();
-                DataRow[] cadrs = dsAccount.Tables["ClientAccount"].Select(string.Format("AccountID = {0}", ddlAccount.SelectedValue));
+                DataRow[] cadrs = dsAccount.Tables["ClientAccount"].Select(string.Format("AccountID = {0}", AccountDropDownList.SelectedValue));
                 for (int i = 0; i < cadrs.Length; i++)
                 {
                     if (cadrs[i].RowState == DataRowState.Modified)
@@ -742,12 +700,12 @@ namespace sselData
             SetPageControlsAndBind(false, false, false);
         }
 
-        protected void btnAccountReenableQuit_Click(object sender, EventArgs e)
+        protected void AccountReenableQuitButton_Click(object sender, EventArgs e)
         {
             SetPageControlsAndBind(false, false, false);
         }
 
-        protected void lbtnReactivateByShortCode_Click(object sender, EventArgs e)
+        protected void ReactivateByShortCodeLinkButton_Click(object sender, EventArgs e)
         {
             ReactivateByShortCode(txtShortCode.Text.Trim());
         }
@@ -757,17 +715,17 @@ namespace sselData
             string shortcodeVal = sc;
 
             txtSearch.Text = shortcodeVal;
-            rblAcctDisplay.SelectedValue = "ShortCode";
+            AcctDisplayRadioButtonList.SelectedValue = "ShortCode";
 
-            ddlAccount.Enabled = true;
+            AccountDropDownList.Enabled = true;
 
             //load the ddlAccount with data
             SetAccountDDL();
 
-            if (ddlAccount.Items.Count == 1)
-                ddlAccount.SelectedIndex = 0;
-            else if (ddlAccount.Items.Count > 1)
-                ddlAccount.SelectedIndex = 1;
+            if (AccountDropDownList.Items.Count == 1)
+                AccountDropDownList.SelectedIndex = 0;
+            else if (AccountDropDownList.Items.Count > 1)
+                AccountDropDownList.SelectedIndex = 1;
 
             pIntAccount.Visible = false;
             SetPageControlsAndBind(false, true, false);
@@ -788,7 +746,7 @@ namespace sselData
             return activeState;
         }
 
-        protected void btnAccountStore_Click(object sender, EventArgs e)
+        protected void AccountStoreButton_Click(object sender, EventArgs e)
         {
             AlertInfo[] strValidate;
 
@@ -837,90 +795,73 @@ namespace sselData
                 // add rows to Client, ClientSite and ClientOrg for new entries
                 bool isNewEntry = AccountID == 0;
 
-                DataRow dr;
+                DataRow accountRow;
 
                 if (isNewEntry)
                 {
                     // add an entry to the client table
-                    dr = dsAccount.Tables["Account"].NewRow();
-                    dr["OrgID"] = Session["OrgID"];
+                    accountRow = dsAccount.Tables["Account"].NewRow();
+                    accountRow.SetField("OrgID", Convert.ToInt32(Session["OrgID"]));
+                    accountRow.SetField("BillAddressID", 0);
+                    accountRow.SetField("ShipAddressID", 0);
 
                     if (pIntAccount.Visible)
-                        dr["Project"] = txtProject.Text.Trim();
+                        accountRow.SetField("Project", txtProject.Text.Trim());
                     else
-                        dr["Project"] = string.Empty;
+                        accountRow.SetField("Project", string.Empty);
                 }
                 else
                 {
                     // get the entry in the client table
-                    dr = dsAccount.Tables["Account"].Rows.Find(AccountID);
+                    accountRow = dsAccount.Tables["Account"].Rows.Find(AccountID);
                 }
 
                 // if entering new or modifying, update the fields
                 if (pIntAccount.Visible)
                 {
-                    dr["Number"] = txtAccount.Text.Trim() + txtFund.Text.Trim() + txtDepartment.Text.Trim() + txtProgram.Text.Trim() + txtClass.Text.Trim() + txtProject.Text.Trim();
-                    dr["ShortCode"] = txtShortCode.Text.Trim();
+                    accountRow.SetField("Number", txtAccount.Text.Trim() + txtFund.Text.Trim() + txtDepartment.Text.Trim() + txtProgram.Text.Trim() + txtClass.Text.Trim() + txtProject.Text.Trim());
+                    accountRow.SetField("ShortCode", txtShortCode.Text.Trim());
                 }
                 else
                 {
-                    DateTime endDate;
-                    if (!DateTime.TryParse(txtPoEndDate.Text.Trim(), out endDate))
+                    if (!DateTime.TryParse(txtPoEndDate.Text.Trim(), out DateTime endDate))
                         endDate = DateTime.Now.AddYears(5);
 
-                    double funds;
-                    if (!double.TryParse(txtPoInitialFunds.Text.Trim(), out funds))
+                    if (!double.TryParse(txtPoInitialFunds.Text.Trim(), out double funds))
                         funds = 0.0;
 
-                    dr["ShortCode"] = string.Empty;
-                    dr["Number"] = "999999EX" + txtNumber.Text.Trim();
-                    dr["InvoiceNumber"] = txtInvoiceNumber.Text.Trim();
-                    dr["InvoiceLine1"] = txtInvoiceLine1.Text.Trim();
-                    dr["InvoiceLine2"] = txtInvoiceLine2.Text.Trim();
-                    dr["PoEndDate"] = endDate;
-                    dr["PoInitialFunds"] = funds;
-                    dr["PoRemainingFunds"] = dr["PoInitialFunds"];
+                    accountRow.SetField("ShortCode", string.Empty);
+                    accountRow.SetField("Number", "999999EX" + txtNumber.Text.Trim());
+                    accountRow.SetField("InvoiceNumber", txtInvoiceNumber.Text.Trim());
+                    accountRow.SetField("InvoiceLine1", txtInvoiceLine1.Text.Trim());
+                    accountRow.SetField("InvoiceLine2", txtInvoiceLine2.Text.Trim());
+                    accountRow.SetField("PoEndDate", endDate);
+                    accountRow.SetField("PoInitialFunds", funds);
+                    accountRow.SetField("PoRemainingFunds", accountRow.Field<decimal>("PoInitialFunds"));
                 }
 
-                dr["Name"] = txtName.Text.Trim();
-                dr["FundingSourceID"] = ddlFundingSource.SelectedValue;
-                dr["TechnicalFieldID"] = ddlTechnicalField.SelectedValue;
-                dr["SpecialTopicID"] = ddlSpecialTopic.SelectedValue;
-                dr["AccountTypeID"] = cklistAccountType.SelectedValue;
-                dr["Active"] = true;
+                accountRow.SetField("Name", txtName.Text.Trim());
+                accountRow.SetField("AccountTypeID", cklistAccountType.SelectedValue);
+                accountRow.SetField("FundingSourceID", ddlFundingSource.SelectedValue);
+                accountRow.SetField("TechnicalFieldID", ddlTechnicalField.SelectedValue);
+                accountRow.SetField("SpecialTopicID", ddlSpecialTopic.SelectedValue);
+                accountRow.SetField("Active", true);
 
-                // find any address that need to be dealt with
-                string addressType;
-                DataRow[] fdr = dsAccount.Tables["Address"].Select("AddDelete IS NOT NULL");
-                for (int i = 0; i < fdr.Length; i++)
+                // Handle new addresses. We need to do this here because if default addresses were added they must now be linked to the account.
+                var newAddresses = dsAccount.Tables["Address"].AsEnumerable().Where(x => x.RowState == DataRowState.Added);
+                foreach (var addr in newAddresses)
                 {
-                    addressType = fdr[i]["AddressType"].ToString();
-                    if (Convert.ToBoolean(fdr[i]["AddDelete"])) //' addr was added
-                    {
-                        dr[addressType] = fdr[i]["AddressID"];
-                        fdr[i]["AddDelete"] = DBNull.Value;
-                    }
-                    else
-                    {
-                        dr[addressType] = 0;
-                        fdr[i].Delete();
-                    }
-                }
-
-                // set unused AddressID's to 0
-                foreach (var addrType in AddressManager1.AddressTypes)
-                {
-                    if (dr[addrType.Column] == DBNull.Value)
-                        dr[addrType.Column] = 0;
+                    var addressType = addr.Field<string>("AddressType");
+                    accountRow.SetField(addressType, addr.Field<int>("AddressID"));
                 }
 
                 // update rows in ClientAccount as needed
-                DataRow[] cmdr = dsAccount.Tables["Clientaccount"].Select("AccountID = 0");
-                for (int i = 0; i < cmdr.Length; i++)
-                    cmdr[i]["AccountID"] = dr["AccountID"];
+                var cmdr = dsAccount.Tables["ClientAccount"].Select("AccountID = 0");
+                foreach (var dr in cmdr)
+                    dr.SetField("AccountID", accountRow.Field<int>("AccountID"));
 
                 if (isNewEntry)
-                    dsAccount.Tables["Account"].Rows.Add(dr);
+                    dsAccount.Tables["Account"].Rows.Add(accountRow);
 
                 CacheManager.Current.CacheData(dsAccount);
 
@@ -928,264 +869,35 @@ namespace sselData
             }
         }
 
-        private int CalculateAccountTypeSum()
+        protected void AccountStoreQuitButton_Click(object sender, EventArgs e)
         {
-            int sum = 0;
+            // undo all changes
+            var accountRow = dsAccount.Tables["Account"].Select($"AccountID = {AccountID}").FirstOrDefault();
 
-            foreach (ListItem item in cklistAccountType.Items)
+            if (accountRow != null)
             {
-                if (item.Selected)
-                    sum += Convert.ToInt32(item.Value);
+                DataRow addressRow;
+
+                addressRow = dsAccount.Tables["Address"].Select($"AddressID = {accountRow["BillAddressID"]}").FirstOrDefault();
+                if (addressRow != null) addressRow.RejectChanges();
+                addressRow = dsAccount.Tables["Address"].Select($"AddressID = {accountRow["ShipAddressID"]}").FirstOrDefault();
+                if (addressRow != null) addressRow.RejectChanges();
+
+                var clientAccountRows = dsAccount.Tables["ClientAccount"].Select($"AccountID = {AccountID}");
+                foreach (var dr in clientAccountRows)
+                    dr.RejectChanges();
+
+                accountRow.RejectChanges();
+
+                CacheManager.Current.CacheData(dsAccount);
             }
 
-            return sum;
-        }
-
-        protected void btnAccountStoreQuit_Click(object sender, EventArgs e)
-        {
-            DataRow[] fdr;
-
-            // remove any addresses that were added
-            fdr = dsAccount.Tables["Address"].Select("AddDelete = 1");
-            if (fdr.Length == 1)
-                fdr[0].Delete();
-
-            // unmark any addresses that were removed - only need to check for non-new entries
-            if (AccountID > 0)
-            {
-                DataRow dr = dsAccount.Tables["Account"].Rows.Find(AccountID);
-                fdr = dsAccount.Tables["Address"].Select("AddDelete = 0");
-
-                DataRowState drs;
-                for (int i = 0; i < fdr.Length; i++)
-                {
-                    drs = fdr[i].RowState;
-                    string addressType = fdr[i]["AddressType"].ToString();
-                    dr[addressType] = fdr[i]["AddressID"];
-                    fdr[i]["AddDelete"] = DBNull.Value;
-                    fdr[i]["AddressType"] = DBNull.Value;
-
-                    if (drs == DataRowState.Unchanged)
-                        fdr[i].AcceptChanges();
-                }
-            }
-
-            CacheManager.Current.CacheData(dsAccount);
+            AccountID = 0;
 
             SetPageControlsAndBind(false, false, false);
         }
 
-        protected void ddlAddrType_Changed(object sender, EventArgs e)
-        {
-            DropDownList ddlAddrType = (DropDownList)sender;
-            PopulateAddressWithDefault(ddlAddrType.SelectedValue, (DataGridItem)ddlAddrType.NamingContainer);
-        }
-
-        //protected void dgAddress_ItemCommand(object source, DataGridCommandEventArgs e)
-        //{
-        //    AlertInfo[] strValidate = new AlertInfo[3];
-        //    DataRow dr;
-        //    int AddressID;
-
-        //    // use AddDelete to mark new and deleted rows only
-        //    // changes that are saved cannot be undone by quiting at the org layer
-        //    switch (e.CommandName)
-        //    {
-        //        case "AddNewRow":
-        //            strValidate[0].Data = ((TextBox)e.Item.FindControl("txtStrAddress1F")).Text;
-        //            strValidate[0].Field = "a street address.";
-        //            strValidate[1].Data = ((TextBox)e.Item.FindControl("txtCityF")).Text;
-        //            strValidate[1].Field = "a city.";
-        //            strValidate[2].Data = ((TextBox)e.Item.FindControl("txtStateF")).Text;
-        //            strValidate[2].Field = "a state.";
-        //            if (ValidateField(strValidate))
-        //            {
-        //                dr = dsAccount.Tables["Address"].NewRow();
-        //                dr["AddressType"] = ((DropDownList)e.Item.FindControl("ddlTypeF")).SelectedValue;
-        //                dr["InternalAddress"] = ((TextBox)e.Item.FindControl("txtInternalAddressF")).Text;
-        //                dr["StrAddress1"] = ((TextBox)e.Item.FindControl("txtStrAddress1F")).Text;
-        //                dr["StrAddress2"] = ((TextBox)e.Item.FindControl("txtStrAddress2F")).Text;
-        //                dr["City"] = ((TextBox)e.Item.FindControl("txtCityF")).Text;
-        //                dr["State"] = ((TextBox)e.Item.FindControl("txtStateF")).Text;
-        //                dr["Zip"] = ((TextBox)e.Item.FindControl("txtZipF")).Text;
-        //                dr["Country"] = ((TextBox)e.Item.FindControl("txtCountryF")).Text;
-        //                dr["AddDelete"] = true;
-        //                dsAccount.Tables["Address"].Rows.Add(dr);
-
-        //                Cache.Insert(DataUtility.CacheID, dsAccount, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
-        //                SetPageControlsAndBind(true, false, false);
-        //            }
-        //            break;
-        //        case "Edit":
-        //            //Datagrid in edit mode, hide footer section 
-        //            //dgAddress.EditItemIndex = Convert.ToInt32(e.Item.ItemIndex);
-        //            AddressManager1.EditItemIndex = Convert.ToInt32(e.Item.ItemIndex);
-        //            SetPageControlsAndBind(true, false, true);
-        //            break;
-        //        case "Cancel":
-        //            //Datagrid leaving edit mode 
-        //            AddressManager1.EditItemIndex = -1;
-        //            SetPageControlsAndBind(true, false, false);
-        //            break;
-        //        case "Update":
-        //            strValidate[0].Data = ((TextBox)e.Item.FindControl("txtStrAddress1")).Text;
-        //            strValidate[0].Field = "a street address.";
-        //            strValidate[1].Data = ((TextBox)e.Item.FindControl("txtCity")).Text;
-        //            strValidate[1].Field = "a city.";
-        //            strValidate[2].Data = ((TextBox)e.Item.FindControl("txtState")).Text;
-        //            strValidate[2].Field = "a state.";
-        //            if (ValidateField(strValidate))
-        //            {
-        //                AddressID = Convert.ToInt32(AddressManager1.DataKeys[e.Item.ItemIndex]);
-        //                dr = dsAccount.Tables["Address"].Rows.Find(AddressID);
-        //                dr["AddressType"] = ((DropDownList)e.Item.FindControl("ddlType")).SelectedValue;
-        //                dr["InternalAddress"] = ((TextBox)e.Item.FindControl("txtInternalAddress")).Text;
-        //                dr["StrAddress1"] = ((TextBox)e.Item.FindControl("txtStrAddress1")).Text;
-        //                dr["StrAddress2"] = ((TextBox)e.Item.FindControl("txtStrAddress2")).Text;
-        //                dr["City"] = ((TextBox)e.Item.FindControl("txtCity")).Text;
-        //                dr["State"] = ((TextBox)e.Item.FindControl("txtState")).Text;
-        //                dr["Zip"] = ((TextBox)e.Item.FindControl("txtZip")).Text;
-        //                dr["Country"] = ((TextBox)e.Item.FindControl("txtCountry")).Text;
-
-        //                Cache.Insert(DataUtility.CacheID, dsAccount, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
-        //                dgAddress.EditItemIndex = -1;
-        //                SetPageControlsAndBind(true, false, false);
-        //            }
-        //            break;
-        //        case "Delete":
-        //            AddressID = Convert.ToInt32(dgAddress.DataKeys[e.Item.ItemIndex]);
-        //            dr = dsAccount.Tables["Address"].Rows.Find(AddressID);
-
-        //            if (dr["AddDelete"] == DBNull.Value) // untouched - mark for deletion
-        //            {
-        //                dr["AddDelete"] = false; //' will set rowstate to modified
-
-        //                int AccountID = Convert.ToInt32(hidAccountID.Value);
-        //                DataRow adr = dsAccount.Tables["Account"].Rows.Find(AccountID);
-        //                foreach (DictionaryEntry addrType in addressTypes)
-        //                {
-        //                    string columnName = addrType.Key.ToString();
-        //                    if (Convert.ToInt32(adr[columnName]) == AddressID)
-        //                        adr[columnName] = 0;
-        //                }
-        //            }
-        //            else
-        //            {
-        //                if (Convert.ToBoolean(dr["AddDelete"])) // was just added, so simply remove it
-        //                    dr.Delete();
-        //            }
-
-        //            Cache.Insert(DataUtility.CacheID, dsAccount, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
-        //            SetPageControlsAndBind(true, false, false);
-        //            break;
-        //    }
-        //}
-
-        //protected void dgAddress_ItemDataBound(object sender, DataGridItemEventArgs e)
-        //{
-        //    DataRowView drv = (DataRowView)e.Item.DataItem;
-
-        //    if (e.Item.ItemType == ListItemType.EditItem)
-        //    {
-        //        // show current item and all unused items
-        //        // must be handled differently from footer since entire grid not yet populated
-        //        int AccountID = Convert.ToInt32(btnAccountStore.CommandArgument);
-        //        DropDownList ddlType = (DropDownList)e.Item.FindControl("ddlType");
-        //        DataRow dr = dsAccount.Tables["Account"].Rows.Find(AccountID);
-
-        //        if (dr == null)
-        //            ddlType.Enabled = false;
-        //        else
-        //        {
-        //            foreach (DictionaryEntry addrType in addressTypes)
-        //            {
-        //                string columnName = addrType.Key.ToString();
-        //                if (Convert.ToInt32(dr[columnName]) != 0 && columnName != drv["AddressType"].ToString())
-        //                {
-        //                    ListItem fItem = ddlType.Items.FindByValue(columnName);
-        //                    ddlType.Items.Remove(fItem);
-        //                }
-        //            }
-        //        }
-
-        //        ((DropDownList)e.Item.FindControl("ddlType")).SelectedValue = drv["AddressType"].ToString();
-        //        ((TextBox)e.Item.FindControl("txtInternalAddress")).Text = drv["InternalAddress"].ToString();
-        //        ((TextBox)e.Item.FindControl("txtStrAddress1")).Text = drv["StrAddress1"].ToString();
-        //        ((TextBox)e.Item.FindControl("txtStrAddress2")).Text = drv["StrAddress2"].ToString();
-        //        ((TextBox)e.Item.FindControl("txtCity")).Text = drv["City"].ToString();
-        //        ((TextBox)e.Item.FindControl("txtState")).Text = drv["State"].ToString();
-        //        ((TextBox)e.Item.FindControl("txtZip")).Text = drv["Zip"].ToString();
-        //        ((TextBox)e.Item.FindControl("txtCountry")).Text = drv["Country"].ToString();
-        //    }
-        //    else if (e.Item.ItemType == ListItemType.Footer)
-        //    {
-        //        // show only unused items
-        //        if (dgAddress.ShowFooter)
-        //        {
-        //            if (dgAddress.Items.Count == addressTypes.Count)
-        //                dgAddress.ShowFooter = false;
-        //            else
-        //            {
-        //                DropDownList ddlType = (DropDownList)e.Item.FindControl("ddlTypeF");
-
-        //                foreach (DataGridItem dgi in dgAddress.Items)
-        //                {
-        //                    foreach (DictionaryEntry addrType in addressTypes)
-        //                    {
-        //                        string columnName = addrType.Key.ToString();
-        //                        string label = addrType.Value.ToString();
-        //                        Label lblType = dgi.FindControl("lblType") as Label;
-        //                        if (lblType != null && lblType.Text == label)
-        //                        {
-        //                            ListItem fItem = ddlType.Items.FindByValue(columnName);
-        //                            ddlType.Items.Remove(fItem);
-        //                            break;
-        //                        }
-        //                    }
-        //                }
-
-        //                if (ddlType.Items.Count > 0)
-        //                {
-        //                    ddlType.SelectedIndex = 0;
-        //                    PopulateAddressWithDefault(ddlType.SelectedValue, e.Item);
-        //                }
-        //                else
-        //                    ((TextBox)e.Item.FindControl("txtCountryF")).Text = "US";
-        //            }
-        //        }
-        //    }
-        //    else if (e.Item.ItemType == ListItemType.AlternatingItem || e.Item.ItemType == ListItemType.Item)
-        //    {
-        //        ((Label)e.Item.FindControl("lblType")).Text = addressTypes[drv["AddressType"]].ToString();
-        //        ((Label)e.Item.FindControl("lblInternalAddress")).Text = drv["InternalAddress"].ToString();
-        //        ((Label)e.Item.FindControl("lblStrAddress1")).Text = drv["StrAddress1"].ToString();
-        //        ((Label)e.Item.FindControl("lblStrAddress2")).Text = drv["StrAddress2"].ToString();
-        //        ((Label)e.Item.FindControl("lblCity")).Text = drv["City"].ToString();
-        //        ((Label)e.Item.FindControl("lblState")).Text = drv["State"].ToString();
-        //        ((Label)e.Item.FindControl("lblZip")).Text = drv["Zip"].ToString();
-        //        ((Label)e.Item.FindControl("lblCountry")).Text = drv["Country"].ToString();
-        //    }
-        //}
-
-        private void PopulateAddressWithDefault(string type, DataGridItem dgi)
-        {
-            DataRow drOrg = dsAccount.Tables["Org"].Rows.Find(Session["OrgID"]);
-            int AddressID = Convert.ToInt32(drOrg["Def" + type]);
-            if (AddressID != 0)
-            {
-                DataRow drAddr = dsAccount.Tables["Address"].Rows.Find(AddressID);
-
-                ((TextBox)dgi.FindControl("txtInternalAddressF")).Text = drAddr["InternalAddress"].ToString();
-                ((TextBox)dgi.FindControl("txtStrAddress1F")).Text = drAddr["StrAddress1"].ToString();
-                ((TextBox)dgi.FindControl("txtStrAddress2F")).Text = drAddr["StrAddress2"].ToString();
-                ((TextBox)dgi.FindControl("txtCityF")).Text = drAddr["City"].ToString();
-                ((TextBox)dgi.FindControl("txtStateF")).Text = drAddr["State"].ToString();
-                ((TextBox)dgi.FindControl("txtZipF")).Text = drAddr["Zip"].ToString();
-                ((TextBox)dgi.FindControl("txtCountryF")).Text = drAddr["Country"].ToString();
-            }
-        }
-
-        protected void dgAccountManager_ItemCommand(object source, DataGridCommandEventArgs e)
+        protected void AccountManagerDataGrid_ItemCommand(object source, DataGridCommandEventArgs e)
         {
             // check if client manager relationship exists
             bool isNewEntry = false;
@@ -1221,9 +933,9 @@ namespace sselData
                     break;
                 case "Delete":
                     // remove access for manager's clients unless another manager has client and account
-                    int ManagerOrgID = Convert.ToInt32(dgAccountManager.DataKeys[e.Item.ItemIndex]);
+                    int managerOrgId = Convert.ToInt32(AccountManagerDataGrid.DataKeys[e.Item.ItemIndex]);
 
-                    DataRow[] cadrs = dsAccount.Tables["ClientAccount"].Select(string.Format("AccountID = {0} AND ClientOrgID = {1}", AccountID, ManagerOrgID));
+                    DataRow[] cadrs = dsAccount.Tables["ClientAccount"].Select(string.Format("AccountID = {0} AND ClientOrgID = {1}", AccountID, managerOrgId));
                     if (cadrs[0].RowState == DataRowState.Added)
                         cadrs[0].Delete();
                     else
@@ -1232,7 +944,7 @@ namespace sselData
 
                         bool disableAcct; // need to do this because of default account
                         DataRow[] madrs;
-                        DataRow[] cmdrs = dsAccount.Tables["ClientManager"].Select(string.Format("ManagerOrgID = {0} AND Active = 1", ManagerOrgID));
+                        DataRow[] cmdrs = dsAccount.Tables["ClientManager"].Select(string.Format("ManagerOrgID = {0} AND Active = 1", managerOrgId));
 
                         for (int i = 0; i < cmdrs.Length; i++) // for all clients serviced by this manager
                         {
@@ -1260,7 +972,7 @@ namespace sselData
             }
         }
 
-        protected void dgAccountManager_ItemDataBound(object sender, DataGridItemEventArgs e)
+        protected void AccountManagerDataGrid_ItemDataBound(object sender, DataGridItemEventArgs e)
         {
             DataRowView drv = (DataRowView)e.Item.DataItem;
 
@@ -1278,9 +990,9 @@ namespace sselData
 
                 // remove managers from ddl that have already been selected
                 DataRow dr;
-                for (int i = 0; i < dgAccountManager.DataKeys.Count; i++)
+                for (int i = 0; i < AccountManagerDataGrid.DataKeys.Count; i++)
                 {
-                    dr = dsAccount.Tables["ManagerOrg"].Rows.Find(dgAccountManager.DataKeys[i]);
+                    dr = dsAccount.Tables["ManagerOrg"].Rows.Find(AccountManagerDataGrid.DataKeys[i]);
                     if (dr != null)
                         ddlMgr.Items.Remove(ddlMgr.Items.FindByValue(dr["ClientOrgID"].ToString()));
                 }
@@ -1348,17 +1060,36 @@ namespace sselData
                 return true;
         }
 
-        protected void btnSave_Click(object sender, EventArgs e)
+        protected void SaveButton_Click(object sender, EventArgs e)
+        {
+            HandleSave();
+            DiscardButton_Click(sender, e);
+        }
+
+        protected void HandleSave()
         {
             SqlConnection cnSselData = new SqlConnection(ConfigurationManager.ConnectionStrings["cnSselData"].ConnectionString);
 
             // update the address table - use handler to update ClientOrg table
             SqlDataAdapter daAddress = new SqlDataAdapter();
-            daAddress.RowUpdating += daAddress_RowUpdating;
-            daAddress.RowUpdated += daAddress_RowUpdated;
+            daAddress.RowUpdating += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                    oldAddressID = Convert.ToInt32(e.Row["AddressID"]);
+            };
 
-            daAddress.InsertCommand = new SqlCommand("Address_Insert", cnSselData);
-            daAddress.InsertCommand.CommandType = CommandType.StoredProcedure;
+            daAddress.RowUpdated += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                {
+                    // exactly one row will match
+                    DataRow[] fdr = dsAccount.Tables["Account"].Select(string.Format("{0} = {1}", e.Row["AddressType"], oldAddressID));
+                    string addressType = e.Row["AddressType"].ToString();
+                    fdr[0][addressType] = e.Row["AddressID"];
+                }
+            };
+
+            daAddress.InsertCommand = new SqlCommand("Address_Insert", cnSselData) { CommandType = CommandType.StoredProcedure };
             daAddress.InsertCommand.Parameters.Add("@InternalAddress", SqlDbType.NVarChar, 45, "InternalAddress");
             daAddress.InsertCommand.Parameters.Add("@StrAddress1", SqlDbType.NVarChar, 45, "StrAddress1");
             daAddress.InsertCommand.Parameters.Add("@StrAddress2", SqlDbType.NVarChar, 45, "StrAddress2");
@@ -1367,8 +1098,7 @@ namespace sselData
             daAddress.InsertCommand.Parameters.Add("@Zip", SqlDbType.NVarChar, 10, "Zip");
             daAddress.InsertCommand.Parameters.Add("@Country", SqlDbType.NVarChar, 50, "Country");
 
-            daAddress.UpdateCommand = new SqlCommand("Address_Update", cnSselData);
-            daAddress.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daAddress.UpdateCommand = new SqlCommand("Address_Update", cnSselData) { CommandType = CommandType.StoredProcedure };
             daAddress.UpdateCommand.Parameters.Add("@AddressID", SqlDbType.Int, 4, "AddressID");
             daAddress.UpdateCommand.Parameters.Add("@InternalAddress", SqlDbType.NVarChar, 45, "InternalAddress");
             daAddress.UpdateCommand.Parameters.Add("@StrAddress1", SqlDbType.NVarChar, 45, "StrAddress1");
@@ -1378,19 +1108,31 @@ namespace sselData
             daAddress.UpdateCommand.Parameters.Add("@Zip", SqlDbType.NVarChar, 10, "Zip");
             daAddress.UpdateCommand.Parameters.Add("@Country", SqlDbType.NVarChar, 50, "Country");
 
-            daAddress.DeleteCommand = new SqlCommand("Address_Delete", cnSselData);
-            daAddress.DeleteCommand.CommandType = CommandType.StoredProcedure;
+            daAddress.DeleteCommand = new SqlCommand("Address_Delete", cnSselData) { CommandType = CommandType.StoredProcedure };
             daAddress.DeleteCommand.Parameters.Add("@AddressID", SqlDbType.Int, 4, "AddressID");
 
             daAddress.Update(dsAccount, "Address");
 
             // update the Account table - use handler to update ClientOrg table
             SqlDataAdapter daClient = new SqlDataAdapter();
-            daClient.RowUpdating += daClient_RowUpdating;
-            daClient.RowUpdated += daClient_RowUpdated;
+            daClient.RowUpdating += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                    oldAccountID = Convert.ToInt32(e.Row["AccountID"]);
+            };
 
-            daClient.InsertCommand = new SqlCommand("Account_Insert", cnSselData);
-            daClient.InsertCommand.CommandType = CommandType.StoredProcedure;
+            daClient.RowUpdated += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                {
+                    // update AccountOrg
+                    DataRow[] fdr = dsAccount.Tables["ClientAccount"].Select(string.Format("AccountID = {0}", oldAccountID));
+                    for (int i = 0; i < fdr.Length; i++)
+                        fdr[i]["AccountID"] = e.Row["AccountID"];
+                }
+            };
+
+            daClient.InsertCommand = new SqlCommand("Account_Insert", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClient.InsertCommand.Parameters.Add("@OrgID", SqlDbType.Int, 4, "OrgID");
             daClient.InsertCommand.Parameters.Add("@Name", SqlDbType.NVarChar, 50, "Name");
             daClient.InsertCommand.Parameters.Add("@Number", SqlDbType.NVarChar, 50, "Number");
@@ -1409,8 +1151,7 @@ namespace sselData
             daClient.InsertCommand.Parameters.Add("@PoRemainingFunds", SqlDbType.Money, 8, "PoRemainingFunds");
             daClient.InsertCommand.Parameters.Add("@Active", SqlDbType.Bit, 1, "Active");
 
-            daClient.UpdateCommand = new SqlCommand("Account_Update", cnSselData);
-            daClient.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daClient.UpdateCommand = new SqlCommand("Account_Update", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClient.UpdateCommand.Parameters.Add("@AccountID", SqlDbType.Int, 4, "AccountID");
             daClient.UpdateCommand.Parameters.Add("@OrgID", SqlDbType.Int, 4, "OrgID");
             daClient.UpdateCommand.Parameters.Add("@Name", SqlDbType.NVarChar, 50, "Name");
@@ -1433,17 +1174,17 @@ namespace sselData
             daClient.Update(dsAccount, "Account");
 
             // update the ClientAccount table
-            SqlDataAdapter daClientAccount = new SqlDataAdapter();
+            SqlDataAdapter daClientAccount = new SqlDataAdapter
+            {
+                InsertCommand = new SqlCommand("ClientAccount_Insert", cnSselData) { CommandType = CommandType.StoredProcedure }
+            };
 
-            daClientAccount.InsertCommand = new SqlCommand("ClientAccount_Insert", cnSselData);
-            daClientAccount.InsertCommand.CommandType = CommandType.StoredProcedure;
             daClientAccount.InsertCommand.Parameters.Add("@ClientOrgID", SqlDbType.Int, 4, "ClientOrgID");
             daClientAccount.InsertCommand.Parameters.Add("@AccountID", SqlDbType.Int, 4, "AccountID");
             daClientAccount.InsertCommand.Parameters.Add("@Manager", SqlDbType.Bit, 1, "Manager");
             daClientAccount.InsertCommand.Parameters.Add("@Active", SqlDbType.Bit, 1, "Active");
 
-            daClientAccount.UpdateCommand = new SqlCommand("ClientAccount_Update", cnSselData);
-            daClientAccount.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daClientAccount.UpdateCommand = new SqlCommand("ClientAccount_Update", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClientAccount.UpdateCommand.Parameters.Add("@ClientAccountID", SqlDbType.Int, 4, "ClientAccountID");
             daClientAccount.UpdateCommand.Parameters.Add("@Manager", SqlDbType.Bit, 1, "Manager");
             daClientAccount.UpdateCommand.Parameters.Add("@Active", SqlDbType.Int, 4, "Active");
@@ -1452,54 +1193,17 @@ namespace sselData
 
             // this is used to turn on/off card access to the lab - for existing clients only
 
-            SqlDataAdapter daClientAccess = new SqlDataAdapter();
-
-            daClientAccess.UpdateCommand = new SqlCommand("Client_AuxDBUpdate", cnSselData);
+            SqlDataAdapter daClientAccess = new SqlDataAdapter { UpdateCommand = new SqlCommand("Client_AuxDBUpdate", cnSselData) };
             daClientAccess.UpdateCommand.CommandType = CommandType.StoredProcedure;
             daClientAccess.UpdateCommand.Parameters.Add("@ClientID", SqlDbType.Int, 4, "ClientID");
             daClientAccess.UpdateCommand.Parameters.Add("@EnableAccess", SqlDbType.Bit, 1, "EnableAccess");
 
             daClientAccess.Update(dsAccount, "Client");
-
-            btnDiscard_Click(sender, e);
         }
 
-        private void daAddress_RowUpdating(object sender, SqlRowUpdatingEventArgs e)
+        protected void DiscardButton_Click(object sender, EventArgs e)
         {
-            if (e.StatementType == StatementType.Insert)
-                oldAddressID = Convert.ToInt32(e.Row["AddressID"]);
-        }
-
-        private void daAddress_RowUpdated(object sender, SqlRowUpdatedEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-            {
-                // exactly one row will match
-                DataRow[] fdr = dsAccount.Tables["Account"].Select(string.Format("{0} = {1}", e.Row["AddressType"], oldAddressID));
-                string addressType = e.Row["AddressType"].ToString();
-                fdr[0][addressType] = e.Row["AddressID"];
-            }
-        }
-
-        private void daClient_RowUpdating(object sender, SqlRowUpdatingEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-                oldAccountID = Convert.ToInt32(e.Row["AccountID"]);
-        }
-
-        private void daClient_RowUpdated(object sender, SqlRowUpdatedEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-            {
-                // update AccountOrg
-                DataRow[] fdr = dsAccount.Tables["ClientAccount"].Select(string.Format("AccountID = {0}", oldAccountID));
-                for (int i = 0; i < fdr.Length; i++)
-                    fdr[i]["AccountID"] = e.Row["AccountID"];
-            }
-        }
-
-        protected void btnDiscard_Click(object sender, EventArgs e)
-        {
+            AccountID = 0;
             CacheManager.Current.RemoveCacheData(); // remove anything left in cache
             Response.Redirect("~");
         }
@@ -1522,10 +1226,10 @@ namespace sselData
         {
             DataRow dr = dsAccount.Tables["Address"].Rows.Find(e.Item.AddressID);
 
-            dr["AddressType"] = e.Item.Type.Column;
-            dr["InternalAddress"] = e.Item.AttentionLine;
-            dr["StrAddress1"] = e.Item.StreetAddressLine1;
-            dr["StrAddress2"] = e.Item.StreetAddressLine2;
+            dr["AddressType"] = e.Item.AddressType;
+            dr["InternalAddress"] = e.Item.Attention;
+            dr["StrAddress1"] = e.Item.AddressLine1;
+            dr["StrAddress2"] = e.Item.AddressLine2;
             dr["City"] = e.Item.City;
             dr["State"] = e.Item.State;
             dr["Zip"] = e.Item.Zip;
@@ -1534,7 +1238,7 @@ namespace sselData
             if (AccountID > 0)
             {
                 DataRow acct = dsAccount.Tables["Account"].Rows.Find(AccountID);
-                acct[e.Item.Type.Column] = e.Item.AddressID;
+                acct[e.Item.AddressType] = e.Item.AddressID;
             }
 
             CacheManager.Current.CacheData(dsAccount);
@@ -1546,10 +1250,10 @@ namespace sselData
         {
             var ndr = dsAccount.Tables["Address"].NewRow();
 
-            ndr["AddressType"] = e.NewItem.Type.Column;
-            ndr["InternalAddress"] = e.NewItem.AttentionLine;
-            ndr["StrAddress1"] = e.NewItem.StreetAddressLine1;
-            ndr["StrAddress2"] = e.NewItem.StreetAddressLine2;
+            ndr["AddressType"] = e.NewItem.AddressType;
+            ndr["InternalAddress"] = e.NewItem.Attention;
+            ndr["StrAddress1"] = e.NewItem.AddressLine1;
+            ndr["StrAddress2"] = e.NewItem.AddressLine2;
             ndr["City"] = e.NewItem.City;
             ndr["State"] = e.NewItem.State;
             ndr["Zip"] = e.NewItem.Zip;
@@ -1560,7 +1264,7 @@ namespace sselData
             if (AccountID > 0)
             {
                 DataRow dr = dsAccount.Tables["Account"].Rows.Find(AccountID);
-                dr[e.NewItem.Type.Column] = ndr["AddressID"];
+                dr[e.NewItem.AddressType] = ndr["AddressID"];
             }
 
             CacheManager.Current.CacheData(dsAccount);

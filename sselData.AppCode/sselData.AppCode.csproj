@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>sselData.AppCode</RootNamespace>
     <AssemblyName>sselData.AppCode</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -33,6 +33,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="StructureMap, Version=4.6.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\StructureMap.4.6.1\lib\net45\StructureMap.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
@@ -47,6 +50,9 @@
     <Compile Include="DAL\AccountTypeDA.cs" />
     <Compile Include="DAL\BillingTypeDA.cs" />
     <Compile Include="DAL\UserGroupDA.cs" />
+    <Compile Include="DataPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="DataUtility.cs" />
     <Compile Include="DynamicCheckboxTemplate.cs" />
     <Compile Include="DynamicLabelTemplate.cs" />
@@ -59,10 +65,18 @@
       <Project>{98c7f73d-ef9d-4a87-8b79-a1208085cfbd}</Project>
       <Name>LNF.Models</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\LNF\LNF.Web\LNF.Web.csproj">
+      <Project>{f79683ff-e524-4107-a6e1-29579ee544e1}</Project>
+      <Name>LNF.Web</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\LNF\LNF\LNF.csproj">
       <Project>{e3b73410-869b-4ba2-99ac-ad6708a27ade}</Project>
       <Name>LNF</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

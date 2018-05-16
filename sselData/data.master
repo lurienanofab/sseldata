@@ -6,7 +6,7 @@
 <head runat="server">
     <title>LNF Data Entry</title>
     <link rel="stylesheet" href="/static/styles/theme/default.css" />
-    <link rel="stylesheet" href="styles/address-manager.css" />
+    <link rel="stylesheet" href="styles/address-manager.css?v=20180124940" />
     <asp:ContentPlaceHolder ID="head" runat="server">
     </asp:ContentPlaceHolder>
 </head>

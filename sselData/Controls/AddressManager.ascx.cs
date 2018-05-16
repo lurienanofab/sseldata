@@ -57,15 +57,15 @@ namespace sselData.Controls
             var txtCountry = ((TextBox)repeaterItem.FindControl("txtCountry"));
             var hidAddressID = (HiddenField)repeaterItem.FindControl("hidAddressID");
 
-            var addrType = AddressTypes.First(x => x.Column == ddlType.SelectedValue);
+            var addrType = AddressTypes.First(x => x.Field == ddlType.SelectedValue).Field;
 
             var result = new AddressItem()
             {
                 AddressID = int.Parse(hidAddressID.Value),
-                Type = addrType,
-                AttentionLine = txtAttentionLine.Text,
-                StreetAddressLine1 = txtStreetAddressLine1.Text,
-                StreetAddressLine2 = txtStreetAddressLine2.Text,
+                AddressType = addrType,
+                Attention = txtAttentionLine.Text,
+                AddressLine1 = txtStreetAddressLine1.Text,
+                AddressLine2 = txtStreetAddressLine2.Text,
                 City = txtCity.Text,
                 State = txtState.Text,
                 Zip = txtZip.Text,
@@ -126,8 +126,8 @@ namespace sselData.Controls
         private IEnumerable<AddressType> FilteredAddressTypes()
         {
             List<AddressType> result = new List<AddressType>();
-            string[] columns = Items.Select(x => x.Type.Column).ToArray();
-            result.AddRange(AddressTypes.Where(x => !columns.Contains(x.Column)));
+            string[] columns = Items.Select(x => x.AddressType).ToArray();
+            result.AddRange(AddressTypes.Where(x => !columns.Contains(x.Field)));
             return result;
         }
 
@@ -191,7 +191,7 @@ namespace sselData.Controls
 
                 //we need to add this item's address type back in
                 AddressItem dataItem = Items[item.ItemIndex];
-                dataSource.Add(dataItem.Type);
+                dataSource.Add(new AddressType() { Field = dataItem.AddressType, Name = GetAddressTypeName(dataItem.AddressType) });
 
                 Label lblType = (Label)item.FindControl("lblType");
                 DropDownList ddlType = (DropDownList)item.FindControl("ddlType");
@@ -201,6 +201,19 @@ namespace sselData.Controls
 
                 lblType.Visible = false;
                 ddlType.Visible = true;
+            }
+        }
+
+        private string GetAddressTypeName(string field)
+        {
+            switch (field)
+            {
+                case "BillAddressID":
+                    return "Billing";
+                case "ShipAddressID":
+                    return "Shipping";
+                default:
+                    throw new NotImplementedException();
             }
         }
 
@@ -231,7 +244,7 @@ namespace sselData.Controls
 
             foreach (var addrType in AddressTypes)
             {
-                Items.AddRange(items.Where(x => x.Type.Column == addrType.Column));
+                Items.AddRange(items.Where(x => x.AddressType == addrType.Field));
             }
 
             rptAddressManager.DataSource = Items;
@@ -268,15 +281,15 @@ namespace sselData.Controls
 
             if (!string.IsNullOrEmpty(txtStreetAddressLine1F.Text))
             {
-                var type = AddressTypes.First(x => x.Column == ddlTypeF.SelectedValue);
+                var type = AddressTypes.First(x => x.Field == ddlTypeF.SelectedValue).Field;
 
                 AddressItem item = new AddressItem()
                 {
                     AddressID = 0,
-                    Type = type,
-                    AttentionLine = txtAttentionLineF.Text,
-                    StreetAddressLine1 = txtStreetAddressLine1F.Text,
-                    StreetAddressLine2 = txtStreetAddressLine2F.Text,
+                    AddressType = type,
+                    Attention = txtAttentionLineF.Text,
+                    AddressLine1 = txtStreetAddressLine1F.Text,
+                    AddressLine2 = txtStreetAddressLine2F.Text,
                     City = txtCityF.Text,
                     State = txtStateF.Text,
                     Zip = txtZipF.Text,

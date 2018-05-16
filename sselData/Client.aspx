@@ -158,7 +158,7 @@
                 <tr>
                     <td>
                         <!-- Physical Access -->
-                        <asp:Repeater runat="server" ID="rptPhysicalAccess" OnItemDataBound="rptPhysicalAccess_ItemDataBound">
+                        <asp:Repeater runat="server" ID="PhysicalAccessRepeater" OnItemDataBound="PhysicalAccessRepeater_ItemDataBound">
                             <ItemTemplate>
                                 <div class="physical-access">
                                     <table border="1">
@@ -219,7 +219,7 @@
                                     <td>
                                         <div style="font-weight: bold;">Organization Filter</div>
                                         <div style="margin-bottom: 10px;">
-                                            <asp:DropDownList runat="server" ID="ddlOrg" TabIndex="1" Width="300" CssClass="GridText" AutoPostBack="true" OnSelectedIndexChanged="ddlOrg_SelectedIndexChanged">
+                                            <asp:DropDownList runat="server" ID="OrgDropDownList" TabIndex="1" Width="300" CssClass="GridText" AutoPostBack="true" OnSelectedIndexChanged="OrgDropDownList_SelectedIndexChanged">
                                             </asp:DropDownList>
                                         </div>
                                     </td>
@@ -228,7 +228,7 @@
                                     <td>
                                         <div style="font-weight: bold;">Name Filter</div>
                                         <div style="margin-bottom: 10px;">
-                                            <asp:TextBox runat="server" ID="txtName" TabIndex="2" Width="300" CssClass="GridText" MaxLength="50" AutoPostBack="true" OnTextChanged="txtName_TextChanged"></asp:TextBox>
+                                            <asp:TextBox runat="server" ID="NameTextBox" TabIndex="2" Width="300" CssClass="GridText" MaxLength="50" AutoPostBack="true" OnTextChanged="NameTextBox_TextChanged"></asp:TextBox>
                                         </div>
                                     </td>
                                 </tr>
@@ -236,14 +236,14 @@
                                     <td>
                                         <div style="font-weight: bold;">Client to Add to Organization</div>
                                         <div style="margin-bottom: 10px;">
-                                            <asp:DropDownList runat="server" ID="ddlClient" TabIndex="3" Width="536" CssClass="DDLText" AutoPostBack="true" OnSelectedIndexChanged="ddlClient_SelectedIndexChanged">
+                                            <asp:DropDownList runat="server" ID="ClientDropDownList" TabIndex="3" Width="536" CssClass="DDLText" AutoPostBack="true" OnSelectedIndexChanged="ClientDropDownList_SelectedIndexChanged">
                                             </asp:DropDownList>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>
-                                        <asp:Button runat="server" ID="btnExistingQuit" CssClass="QuitStoreButton" Text="Abandon Restore" CausesValidation="false" OnClick="btnExistingQuit_Click" />
+                                        <asp:Button runat="server" ID="ExistingQuitButton" CssClass="QuitStoreButton" Text="Abandon Restore" CausesValidation="false" OnClick="ExistingQuitButton_Click" />
                                     </td>
                                 </tr>
                             </table>
@@ -290,7 +290,7 @@
                                 </tr>
                                 <tr>
                                     <td colspan="4">
-                                        <asp:DataGrid runat="server" ID="dgAddress" TabIndex="25" ShowHeader="True" CellPadding="2" ShowFooter="True" DataKeyField="AddressID" AutoGenerateColumns="False" AllowSorting="True" HeaderStyle-Wrap="false" HeaderStyle-Font-Bold="true" HeaderStyle-BackColor="LightGrey" AlternatingItemStyle-BackColor="Linen" GridLines="Horizontal" BorderWidth="1px" BorderStyle="Ridge" BorderColor="LightGray" OnItemCommand="dgAddress_ItemCommand" OnItemDataBound="dgAddress_ItemDataBound">
+                                        <asp:DataGrid runat="server" ID="AddressDataGrid" TabIndex="25" ShowHeader="True" CellPadding="2" ShowFooter="True" DataKeyField="AddressID" AutoGenerateColumns="False" AllowSorting="True" HeaderStyle-Wrap="false" HeaderStyle-Font-Bold="true" HeaderStyle-BackColor="LightGrey" AlternatingItemStyle-BackColor="Linen" GridLines="Horizontal" BorderWidth="1px" BorderStyle="Ridge" BorderColor="LightGray" OnItemCommand="AddressDataGrid_ItemCommand" OnItemDataBound="AddressDataGrid_ItemDataBound">
                                             <FooterStyle CssClass="GridText" BackColor="LightGray"></FooterStyle>
                                             <EditItemStyle CssClass="GridText" BackColor="#66FFFF"></EditItemStyle>
                                             <ItemStyle CssClass="GridText" />
@@ -395,7 +395,7 @@
                                 <tr>
                                     <td>Manager(s):</td>
                                     <td colspan="3">
-                                        <asp:DataGrid runat="server" ID="dgClientManager" CellPadding="2" ShowFooter="true" DataKeyField="ManagerOrgID" AutoGenerateColumns="false" GridLines="Horizontal" BorderWidth="1" BorderStyle="Ridge" BorderColor="LightGray" AllowPaging="false" OnItemCommand="dgClientManager_ItemCommand" OnItemDataBound="dgClientManager_ItemDataBound" OnSortCommand="dgClient_SortCommand">
+                                        <asp:DataGrid runat="server" ID="ClientManagerDataGrid" CellPadding="2" ShowFooter="true" DataKeyField="ManagerOrgID" AutoGenerateColumns="false" GridLines="Horizontal" BorderWidth="1" BorderStyle="Ridge" BorderColor="LightGray" AllowPaging="false" OnItemCommand="ClientManagerDataGrid_ItemCommand" OnItemDataBound="ClientManagerDataGrid_ItemDataBound" OnSortCommand="ClientDataGrid_SortCommand">
                                             <FooterStyle CssClass="GridText" BackColor="LightGray" />
                                             <EditItemStyle CssClass="GridText" BackColor="#66FFFF" />
                                             <ItemStyle CssClass="GridText" />
@@ -429,10 +429,10 @@
                                 <tr>
                                     <td style="height: 30px">Account:</td>
                                     <td style="height: 30px" colspan="3">
-                                        <asp:DropDownList runat="server" ID="ddlAccount" TabIndex="27" Width="384" AutoPostBack="true" OnSelectedIndexChanged="ddlAccount_SelectedIndexChanged" DataTextField="Text" DataValueField="Value">
+                                        <asp:DropDownList runat="server" ID="AccountDropDownList" TabIndex="27" Width="384" AutoPostBack="true" OnSelectedIndexChanged="AccountDropDownList_SelectedIndexChanged" DataTextField="Text" DataValueField="Value">
                                         </asp:DropDownList>
                                         <div>
-                                            <asp:RadioButtonList runat="server" ID="rblAcctDisplay" RepeatDirection="Horizontal" AutoPostBack="true" TextAlign="Left" OnSelectedIndexChanged="rblAcctDisplay_SelectedIndexChanged">
+                                            <asp:RadioButtonList runat="server" ID="AcctDisplayRadioButtonList" RepeatDirection="Horizontal" AutoPostBack="true" TextAlign="Left" OnSelectedIndexChanged="AcctDisplayRadioButtonList_SelectedIndexChanged">
                                                 <asp:ListItem Value="Name" Selected="True">Name</asp:ListItem>
                                                 <asp:ListItem Value="Number">Number</asp:ListItem>
                                                 <asp:ListItem Value="Project">Project</asp:ListItem>
@@ -454,15 +454,15 @@
                                 </tr>
                                 <tr>
                                     <td colspan="4">Billing Types:<br />
-                                        <asp:RadioButtonList runat="server" ID="rdolistBillingType" RepeatDirection="Horizontal" RepeatColumns="4" DataTextField="BillingTypeName" DataValueField="BillingTypeID" DataSourceID="odsBillingType" OnDataBound="rdolistBillingType_DataBound">
+                                        <asp:RadioButtonList runat="server" ID="BillingTypeRadioButtonList" RepeatDirection="Horizontal" RepeatColumns="4" DataTextField="BillingTypeName" DataValueField="BillingTypeID" DataSourceID="BillingTypeObjectDataSource" OnDataBound="BillingTypeRadioButtonList_DataBound">
                                         </asp:RadioButtonList>
-                                        <asp:ObjectDataSource ID="odsBillingType" runat="server" TypeName="sselData.AppCode.DAL.BillingTypeDA" SelectMethod="GetAllBillingTypes"></asp:ObjectDataSource>
+                                        <asp:ObjectDataSource ID="BillingTypeObjectDataSource" runat="server" TypeName="sselData.AppCode.DAL.BillingTypeDA" SelectMethod="GetAllBillingTypes"></asp:ObjectDataSource>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style="text-align: left;" colspan="4">
-                                        <asp:Button runat="server" ID="btnClientSave" TabIndex="28" CssClass="StoreButton" Text="Store New client" CausesValidation="false" OnClick="btnClientSave_Click" />
-                                        <asp:Button runat="server" ID="btnClientQuit" CssClass="QuitStoreButton" Text="Abandon Changes" CausesValidation="false" OnClick="btnClientQuit_Click" />
+                                        <asp:Button runat="server" ID="ClientSaveButton" TabIndex="28" CssClass="StoreButton" Text="Store New client" CausesValidation="false" OnClick="ClientSaveButton_Click" />
+                                        <asp:Button runat="server" ID="ClientQuitButton" CssClass="QuitStoreButton" Text="Abandon Changes" CausesValidation="false" OnClick="ClientQuitButton_Click" />
                                     </td>
                                 </tr>
                             </table>
@@ -479,7 +479,7 @@
                             <table id="Table3" style="width: 300px;" border="1">
                                 <tr>
                                     <td colspan="2">
-                                        <asp:DataGrid runat="server" ID="dgClient" CellPadding="2" ShowFooter="true" DataKeyField="ClientID" AutoGenerateColumns="false" AllowSorting="true" GridLines="Horizontal" BorderWidth="1" BorderStyle="Ridge" BorderColor="LightGray" AllowPaging="true" PageSize="15" Width="100%" OnItemCommand="dgClient_ItemCommand" OnItemDataBound="dgClient_ItemDataBound">
+                                        <asp:DataGrid runat="server" ID="ClientDataGrid" CellPadding="2" ShowFooter="true" DataKeyField="ClientID" AutoGenerateColumns="false" AllowSorting="true" GridLines="Horizontal" BorderWidth="1" BorderStyle="Ridge" BorderColor="LightGray" AllowPaging="true" PageSize="15" Width="100%" OnItemCommand="ClientDataGrid_ItemCommand" OnItemDataBound="ClientDataGrid_ItemDataBound">
                                             <FooterStyle CssClass="GridText" BackColor="LightGray" />
                                             <EditItemStyle CssClass="GridText" BackColor="#66FFFF" />
                                             <ItemStyle CssClass="GridText" />
@@ -513,14 +513,14 @@
                                 </tr>
                                 <tr>
                                     <td style="height: 18px" colspan="2">Select page:&nbsp;
-                                        <asp:DropDownList runat="server" ID="ddlPager" Width="200" AutoPostBack="true" OnSelectedIndexChanged="ddlPager_SelectedIndexChanged">
+                                        <asp:DropDownList runat="server" ID="PagerDropDownList" Width="200" AutoPostBack="true" OnSelectedIndexChanged="PagerDropDownList_SelectedIndexChanged">
                                         </asp:DropDownList>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td colspan="2" style="white-space: nowrap;">
-                                        <asp:Button runat="server" ID="btnSave" Height="32" Width="220" CssClass="SaveButton" Text="Save Changes and Exit" CausesValidation="false" OnClick="btnSave_Click" />
-                                        <asp:Button runat="server" ID="btnDiscard" Height="32" Width="220" CssClass="QuitButton" Text="Discard Changes and Quit" CausesValidation="false" OnClick="btnDiscard_Click" />
+                                        <asp:Button runat="server" ID="SaveButton" Height="32" Width="220" CssClass="SaveButton" Text="Save Changes and Exit" CausesValidation="false" OnClick="SaveButton_Click" />
+                                        <asp:Button runat="server" ID="DiscardButton" Height="32" Width="220" CssClass="QuitButton" Text="Discard Changes and Quit" CausesValidation="false" OnClick="DiscardButton_Click" />
                                     </td>
                                 </tr>
                             </table>

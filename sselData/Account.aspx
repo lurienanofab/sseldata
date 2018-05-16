@@ -2,10 +2,12 @@
 
 <%@ Register Src="~/controls/AddressManager.ascx" TagPrefix="uc" TagName="AddressManager" %>
 <%@ Register Assembly="sselData" Namespace="sselData.Controls" TagPrefix="uc" %>
+
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
 </asp:Content>
+
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
-    <asp:HiddenField runat="server" ID="hidAccountID" Value="0" />
+    <asp:HiddenField runat="server" ID="hidAccountID" />
     <div class="section">
         <asp:Label runat="server" ID="lblHeader" CssClass="PageHeader">Account Information</asp:Label>
         <table id="Table1" style="margin-top: 10px;" border="1">
@@ -57,7 +59,7 @@
                                 <td>
                                     <asp:TextBox runat="server" ID="txtShortCode" MaxLength="6"></asp:TextBox>
                                     <span class="error-messsage-bgcolor" id="spanAjaxErrorMsg"></span><span style="display: none" id="spanEnableByShortcode">
-                                        <asp:LinkButton runat="server" ID="lbtnReactivateByShortCode" OnClick="lbtnReactivateByShortCode_Click" Text="Yes"></asp:LinkButton>
+                                        <asp:LinkButton runat="server" ID="ReactivateByShortCodeLinkButton" OnClick="ReactivateByShortCodeLinkButton_Click">Yes</asp:LinkButton>
                                     </span>
                                 </td>
                             </tr>
@@ -153,14 +155,76 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td colspan="2">
-                                    <uc:AddressManager runat="server" ID="AddressManager1" OnUpdateAddress="AddressManager1_UpdateAddress" OnCreateAddress="AddressManager1_CreateAddress" OnEditAddress="AddressManager1_EditAddress" OnDeleteAddress="AddressManager1_DeleteAddress">
+                                <td colspan="2" class="address-manager">
+                                    <table class="address-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Attention</th>
+                                                <th>Address Line 1</th>
+                                                <th>Address Line 2</th>
+                                                <th>City</th>
+                                                <th>State</th>
+                                                <th>Zip</th>
+                                                <th>Country</th>
+                                                <th>&nbsp;</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="address-entries">
+                                        </tbody>
+                                    </table>
+                                    <script class="address-template" type="text/x-handlebars-template">
+                                        {{#each this}}
+                                        <tr class="address-entry" data-address-id="0" data-address-type="{{@key}}">
+                                            <td>
+                                                <div class="property entry-address-types" style="width: 55px; overflow: hidden;">{{this}}</div>
+                                            </td>
+                                            <td>
+                                                <div class="property entry-attention" style="width: 120px; overflow: hidden;"></div>
+                                            </td>
+                                            <td>
+                                                <div class="property entry-address-line1" style="width: 200px; overflow: hidden;"></div>
+                                            </td>
+                                            <td>
+                                                <div class="property entry-address-line2" style="width: 200px; overflow: hidden;"></div>
+                                            </td>
+                                            <td>
+                                                <div class="property entry-city" style="width: 120px; overflow: hidden;"></div>
+                                            </td>
+                                            <td>
+                                                <div class="property entry-state" style="width: 50px; overflow: hidden;"></div>
+                                            </td>
+                                            <td>
+                                                <div class="property entry-zip" style="width: 60px; overflow: hidden;"></div>
+                                            </td>
+                                            <td>
+                                                <div class="property entry-country" style="width: 60px; overflow: hidden;"></div>
+                                            </td>
+                                            <td>
+                                                <div class="entry-controls" style="width: 45px; overflow: hidden;">
+                                                    <div class="add">
+                                                        <button type="button" class="add-address-button">ADD</button>
+                                                    </div>
+                                                    <div class="edit-delete">
+                                                        <img src="images/im_edit.gif" class="edit-entry" border="0" alt="edit" />
+                                                        <img src="images/im_delete.gif" class="delete-entry" border="0" alt="delete" />
+                                                    </div>
+                                                    <div class="update-cancel">
+                                                        <img src="images/im_update.gif" class="update-entry" border="0" alt="update" />
+                                                        <img src="images/im_cancel.gif" class="cancel-entry" border="0" alt="cancel" />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {{/each}}
+                                    </script>
+                                    <%--<uc:AddressManager runat="server" Visible="false" ID="AddressManager1" OnUpdateAddress="AddressManager1_UpdateAddress" OnCreateAddress="AddressManager1_CreateAddress" OnEditAddress="AddressManager1_EditAddress" OnDeleteAddress="AddressManager1_DeleteAddress">
                                         <AddressTypes>
                                             <uc:AddressType Column="BillAddressID" Name="Billing" />
                                             <uc:AddressType Column="ShipAddressID" Name="Shipping" />
                                         </AddressTypes>
-                                    </uc:AddressManager>
-<%--                                    <asp:DataGrid runat="server" ID="dgAddress" BorderColor="LightGray" BorderStyle="Ridge" BorderWidth="1" GridLines="Horizontal" AlternatingItemStyle-BackColor="Linen" HeaderStyle-BackColor="LightGrey" HeaderStyle-Font-Bold="true" HeaderStyle-Wrap="false" AllowSorting="true" AutoGenerateColumns="false" DataKeyField="AddressID" ShowFooter="true" CellPadding="2" ShowHeader="true" Width="100%" OnItemCommand="dgAddress_ItemCommand" OnItemDataBound="dgAddress_ItemDataBound" Visible="true">
+                                    </uc:AddressManager>--%>
+                                    <%--<asp:DataGrid runat="server" ID="dgAddress" BorderColor="LightGray" BorderStyle="Ridge" BorderWidth="1" GridLines="Horizontal" AlternatingItemStyle-BackColor="Linen" HeaderStyle-BackColor="LightGrey" HeaderStyle-Font-Bold="true" HeaderStyle-Wrap="false" AllowSorting="true" AutoGenerateColumns="false" DataKeyField="AddressID" ShowFooter="true" CellPadding="2" ShowHeader="true" Width="100%" OnItemCommand="dgAddress_ItemCommand" OnItemDataBound="dgAddress_ItemDataBound" Visible="true">
                                         <FooterStyle CssClass="GridText" BackColor="LightGray" />
                                         <EditItemStyle CssClass="GridText" BackColor="#66ffff" />
                                         <ItemStyle CssClass="GridText" />
@@ -283,7 +347,7 @@
                             <tr>
                                 <td>Manager(s):</td>
                                 <td>
-                                    <asp:DataGrid runat="server" ID="dgAccountManager" BorderColor="LightGray" BorderStyle="Ridge" BorderWidth="1px" GridLines="Horizontal" AlternatingItemStyle-BackColor="Linen" HeaderStyle-BackColor="LightGrey" HeaderStyle-Font-Bold="true" HeaderStyle-Wrap="false" AutoGenerateColumns="False" DataKeyField="ClientOrgID" ShowFooter="True" CellPadding="2" AllowPaging="false" OnItemCommand="dgAccountManager_ItemCommand" OnItemDataBound="dgAccountManager_ItemDataBound">
+                                    <asp:DataGrid runat="server" ID="AccountManagerDataGrid" BorderColor="LightGray" BorderStyle="Ridge" BorderWidth="1px" GridLines="Horizontal" AlternatingItemStyle-BackColor="Linen" HeaderStyle-BackColor="LightGrey" HeaderStyle-Font-Bold="true" HeaderStyle-Wrap="false" AutoGenerateColumns="False" DataKeyField="ClientOrgID" ShowFooter="True" CellPadding="2" AllowPaging="false" OnItemCommand="AccountManagerDataGrid_ItemCommand" OnItemDataBound="AccountManagerDataGrid_ItemDataBound">
                                         <FooterStyle CssClass="GridText" BackColor="LightGray"></FooterStyle>
                                         <EditItemStyle CssClass="GridText" BackColor="#66FFFF"></EditItemStyle>
                                         <ItemStyle CssClass="GridText" />
@@ -317,8 +381,8 @@
                             </tr>
                             <tr>
                                 <td colspan="2">
-                                    <asp:Button runat="server" ID="btnAccountStore" CssClass="StoreButton" Text="Store New Account" CausesValidation="false" OnClick="btnAccountStore_Click" />
-                                    <asp:Button runat="server" ID="btnAccountStoreQuit" CssClass="QuitStoreButton" Text="Abandon Changes" CausesValidation="false" OnClick="btnAccountStoreQuit_Click" />
+                                    <asp:Button runat="server" ID="AccountStoreButton" CssClass="StoreButton" Text="Store New Account" CausesValidation="false" OnClick="AccountStoreButton_Click" />
+                                    <asp:Button runat="server" ID="AccountStoreQuitButton" CssClass="QuitStoreButton" Text="Abandon Changes" CausesValidation="false" OnClick="AccountStoreQuitButton_Click" />
                                 </td>
                             </tr>
                         </table>
@@ -331,7 +395,7 @@
                         <table runat="server" id="Table4">
                             <tr>
                                 <td colspan="2">
-                                    <asp:RadioButtonList ID="rblAcctDisplay" runat="server" AutoPostBack="True" RepeatDirection="Horizontal" TextAlign="Left" OnSelectedIndexChanged="rblAcctDisplay_SelectedIndexChanged">
+                                    <asp:RadioButtonList ID="AcctDisplayRadioButtonList" runat="server" AutoPostBack="True" RepeatDirection="Horizontal" TextAlign="Left" OnSelectedIndexChanged="AcctDisplayRadioButtonList_SelectedIndexChanged">
                                         <asp:ListItem Value="Name" Selected="True">Name</asp:ListItem>
                                         <asp:ListItem Value="Number">Number</asp:ListItem>
                                         <asp:ListItem Value="Project">Project</asp:ListItem>
@@ -348,14 +412,14 @@
                             <tr>
                                 <td>Select Account to Restore:</td>
                                 <td>
-                                    <asp:DropDownList ID="ddlAccount" runat="server" CssClass="DDLText" Width="536px" OnPreRender="ddlAccount_PreRender">
+                                    <asp:DropDownList ID="AccountDropDownList" runat="server" CssClass="DDLText" Width="536px" OnPreRender="AccountDropDownList_PreRender">
                                     </asp:DropDownList>
                                 </td>
                             </tr>
                             <tr>
                                 <td colspan="2">
-                                    <asp:Button runat="server" ID="btnAccountReenable" CssClass="StoreButton" Text="Restore Account" CausesValidation="False" OnClick="btnAccountReenable_Click" />
-                                    <asp:Button runat="server" ID="btnAccountReenableQuit" CssClass="QuitStoreButton" Text="Abandon Restore" CausesValidation="False" OnClick="btnAccountReenableQuit_Click" />
+                                    <asp:Button runat="server" ID="AccountReenableButton" CssClass="StoreButton" Text="Restore Account" CausesValidation="False" OnClick="AccountReenableButton_Click" />
+                                    <asp:Button runat="server" ID="AccountReenableQuitButton" CssClass="QuitStoreButton" Text="Abandon Restore" CausesValidation="False" OnClick="AccountReenableQuitButton_Click" />
                                 </td>
                             </tr>
                         </table>
@@ -368,7 +432,7 @@
                         <table id="Table3" border="1">
                             <tr>
                                 <td colspan="2">
-                                    <asp:DataGrid runat="server" ID="dgAccount" BorderColor="LightGray" BorderStyle="Ridge" BorderWidth="1" GridLines="Horizontal" AllowSorting="True" AutoGenerateColumns="False" DataKeyField="AccountID" ShowFooter="True" CellPadding="2" AllowPaging="True" PageSize="15" OnItemCommand="dgAccount_ItemCommand" OnItemDataBound="dgAccount_ItemDataBound" OnSortCommand="dgAccount_SortCommand">
+                                    <asp:DataGrid runat="server" ID="AccountDataGrid" BorderColor="LightGray" BorderStyle="Ridge" BorderWidth="1" GridLines="Horizontal" AllowSorting="True" AutoGenerateColumns="False" DataKeyField="AccountID" ShowFooter="True" CellPadding="2" AllowPaging="True" PageSize="15" OnItemCommand="AccountDataGrid_ItemCommand" OnItemDataBound="AccountDataGrid_ItemDataBound" OnSortCommand="AccountDataGrid_SortCommand">
                                         <FooterStyle CssClass="GridText" BackColor="LightGray" />
                                         <EditItemStyle CssClass="GridText" BackColor="#66FFFF" />
                                         <ItemStyle CssClass="GridText" />
@@ -425,14 +489,14 @@
                             </tr>
                             <tr>
                                 <td colspan="2">Select page:
-                                    <asp:DropDownList runat="server" ID="ddlPager" Width="283px" AutoPostBack="True" OnSelectedIndexChanged="ddlPager_SelectedIndexChanged">
+                                    <asp:DropDownList runat="server" ID="PagerDropDownList" Width="283px" AutoPostBack="True" OnSelectedIndexChanged="PagerDropDownList_SelectedIndexChanged">
                                     </asp:DropDownList>
                                 </td>
                             </tr>
                             <tr>
                                 <td colspan="2">
-                                    <asp:Button runat="server" ID="btnSave" CssClass="SaveButton" Width="220" Height="32" Text="Save Changes and Exit" CausesValidation="false" OnClick="btnSave_Click" />
-                                    <asp:Button runat="server" ID="btnDiscard" CssClass="QuitButton" Width="220" Height="32" Text="Discard Changes and Quit" CausesValidation="false" OnClick="btnDiscard_Click" />
+                                    <asp:Button runat="server" ID="SaveButton" CssClass="SaveButton" Width="220" Height="32" Text="Save Changes and Exit" CausesValidation="false" OnClick="SaveButton_Click" />
+                                    <asp:Button runat="server" ID="DiscardButton" CssClass="QuitButton" Width="220" Height="32" Text="Discard Changes and Quit" CausesValidation="false" OnClick="DiscardButton_Click" />
                                 </td>
                             </tr>
                         </table>
@@ -441,4 +505,20 @@
             </tr>
         </table>
     </div>
+</asp:Content>
+
+<asp:Content runat="server" ID="Content3" ContentPlaceHolderID="scripts">
+    <script src="scripts/handlebars.min-latest.js"></script>
+    <script src="scripts/address-manager.js?v=20180424"></script>
+    <script>
+        var addrmgr = $(".address-manager").addressManager({
+            "id": parseInt('<%=AccountID%>'),
+            "type": "account",
+            "url": '<%=VirtualPathUtility.ToAbsolute("~/ajax/addressmanager.ashx")%>',
+            "addressTypes": {
+                "BillAddressID": "Billing",
+                "ShipAddressID": "Shipping"
+            }
+        });
+    </script>
 </asp:Content>

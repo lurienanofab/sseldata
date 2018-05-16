@@ -1,4 +1,7 @@
 ﻿<%@ Page Title="" Language="C#" MasterPageFile="~/data.master" AutoEventWireup="true" CodeBehind="index.aspx.cs" Inherits="sselData.Index" %>
+
+<%@ Import Namespace="LNF.Models.Data" %>
+
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
     <script>
         function logout(){
@@ -8,6 +11,7 @@
         }
     </script>
 </asp:Content>
+
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
     <div class="section">
         <div class="PageHeader">

@@ -1,11 +1,9 @@
 ﻿using LNF;
 using LNF.CommonTools;
-using LNF.Data;
 using LNF.Models.Data;
 using LNF.PhysicalAccess;
 using LNF.Repository;
 using LNF.Web;
-using LNF.Web.Content;
 using sselData.AppCode;
 using sselData.AppCode.DAL;
 using System;
@@ -17,11 +15,11 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using repo = LNF.Repository.Data;
+using Data = LNF.Repository.Data;
 
 namespace sselData
 {
-    public partial class Client : LNFPage
+    public partial class Client : DataPage
     {
         struct AlertInfo
         {
@@ -99,12 +97,12 @@ namespace sselData
                 // populate Org ddl
                 DataView dvOrg = dsClient.Tables["Org"].DefaultView;
                 dvOrg.Sort = "OrgName ASC";
-                ddlOrg.DataSource = dvOrg;
-                ddlOrg.DataValueField = "OrgID";
-                ddlOrg.DataTextField = "OrgName";
-                ddlOrg.DataBind();
-                ddlOrg.Items.Insert(0, new ListItem("All organizations", "0"));
-                ddlOrg.ClearSelection();
+                OrgDropDownList.DataSource = dvOrg;
+                OrgDropDownList.DataValueField = "OrgID";
+                OrgDropDownList.DataTextField = "OrgName";
+                OrgDropDownList.DataBind();
+                OrgDropDownList.Items.Insert(0, new ListItem("All organizations", "0"));
+                OrgDropDownList.ClearSelection();
 
                 // populate the Privs radio list
                 cblPriv.Items.LoadPrivs();
@@ -228,25 +226,28 @@ namespace sselData
                 DataView dv = dsClient.Tables["Client"].DefaultView;
                 dv.Sort = "DisplayName" + ViewState["dgClientSortDir"].ToString();
                 dv.RowFilter = "DisplayInfo = ''";
-                dgClient.DataSource = dv;
-                dgClient.DataBind();
+                ClientDataGrid.DataSource = dv;
+                ClientDataGrid.DataBind();
 
                 // now, add to ddlPager for paging
-                ddlPager.Items.Clear();
-                int pSize = dgClient.PageSize;
+                PagerDropDownList.Items.Clear();
+                int pSize = ClientDataGrid.PageSize;
                 for (int i = 0; i < dv.Count; i += pSize)
                 {
-                    ListItem pagerItem = new ListItem();
-                    pagerItem.Value = (i / pSize).ToString();
-                    pagerItem.Text = dv[i].Row["LName"] + " ... " + dv[(i + (pSize - 1) >= dv.Count ? dv.Count - 1 : i + (pSize - 1))].Row["LName"];
-                    ddlPager.Items.Add(pagerItem);
+                    ListItem pagerItem = new ListItem
+                    {
+                        Value = (i / pSize).ToString(),
+                        Text = dv[i].Row["LName"] + " ... " + dv[(i + (pSize - 1) >= dv.Count ? dv.Count - 1 : i + (pSize - 1))].Row["LName"]
+                    };
+
+                    PagerDropDownList.Items.Add(pagerItem);
                 }
-                ddlPager.SelectedValue = dgClient.CurrentPageIndex.ToString();
+                PagerDropDownList.SelectedValue = ClientDataGrid.CurrentPageIndex.ToString();
             }
             else if (pAddEdit.Visible)
             {
                 SetFocus(txtFName);
-                if (btnClientSave.Text.ToLower().Contains("new"))
+                if (ClientSaveButton.Text.ToLower().Contains("new"))
                 {
                     lblHeader.Text = "Add new Client";
                     txtUsername.Enabled = true;
@@ -254,7 +255,7 @@ namespace sselData
                 }
                 else
                 {
-                    int clientId = Convert.ToInt32(btnClientSave.CommandArgument);
+                    int clientId = Convert.ToInt32(ClientSaveButton.CommandArgument);
                     DataRow cdr = dsClient.Tables["Client"].Rows.Find(clientId);
                     lblHeader.Text = string.Format("Configure Client {0}", cdr["DisplayName"]);
                     txtUsername.Enabled = false;
@@ -263,23 +264,23 @@ namespace sselData
             else if (pExisting.Visible)
             {
                 lblHeader.Text = "Add existing Client";
-                btnExistingQuit.Visible = true;
+                ExistingQuitButton.Visible = true;
             }
 
             // set other controls
             if (pClientOrg.Visible)
             {
-                btnExistingQuit.Visible = false; // only valid prior to selection
+                ExistingQuitButton.Visible = false; // only valid prior to selection
 
                 // turn off add new and add existing buttons during data edit
-                btnClientSave.Enabled = !inlineAddressEdit;
-                btnClientQuit.Enabled = !inlineAddressEdit;
-                dgAddress.ShowFooter = !inlineAddressEdit;
+                ClientSaveButton.Enabled = !inlineAddressEdit;
+                ClientQuitButton.Enabled = !inlineAddressEdit;
+                AddressDataGrid.ShowFooter = !inlineAddressEdit;
 
                 DataRow odr = dsClient.Tables["Org"].Rows.Find(sessionOrgId);
                 lblClientOrg.Text = string.Format("for {0}", odr["OrgName"]);
 
-                int clientId = Convert.ToInt32(btnClientSave.CommandArgument);
+                int clientId = Convert.ToInt32(ClientSaveButton.CommandArgument);
                 DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", clientId, sessionOrgId));
 
                 // only set the fields when the client has just been selected
@@ -300,8 +301,8 @@ namespace sselData
                     dva.RowFilter += string.Format(" OR AddressID = {0}", codrs[0]["ClientAddressID"]);
                 }
 
-                dgAddress.DataSource = dva;
-                dgAddress.DataBind();
+                AddressDataGrid.DataSource = dva;
+                AddressDataGrid.DataBind();
 
                 // filter the managers
                 DataView dvm = dsClient.Tables["ClientManager"].DefaultView;
@@ -322,8 +323,8 @@ namespace sselData
                 }
 
                 dvm.Sort = "DisplayName";
-                dgClientManager.DataSource = dvm;
-                dgClientManager.DataBind();
+                ClientManagerDataGrid.DataSource = dvm;
+                ClientManagerDataGrid.DataBind();
 
                 UpdateAccountList();
 
@@ -338,7 +339,7 @@ namespace sselData
             }
             else
             {
-                rptPhysicalAccess.Visible = false;
+                PhysicalAccessRepeater.Visible = false;
                 phPhysicalAccessNoData.Visible = false;
             }
         }
@@ -346,20 +347,20 @@ namespace sselData
         private void FillPhysicalAccess(int clientId)
         {
             phPhysicalAccessNoData.Visible = true;
-            rptPhysicalAccess.Visible = false;
+            PhysicalAccessRepeater.Visible = false;
 
             if (clientId > 0)
             {
-                repo.Client c = DA.Current.Single<repo.Client>(clientId);
+                Data.Client c = DA.Current.Single<Data.Client>(clientId);
 
-                var badges = Providers.PhysicalAccess.GetBadge(c);
+                var badges = ServiceProvider.Current.PhysicalAccess.GetBadge(c);
 
                 if (badges.Count() > 0)
                 {
                     phPhysicalAccessNoData.Visible = false;
-                    rptPhysicalAccess.Visible = true;
-                    rptPhysicalAccess.DataSource = badges;
-                    rptPhysicalAccess.DataBind();
+                    PhysicalAccessRepeater.Visible = true;
+                    PhysicalAccessRepeater.DataSource = badges;
+                    PhysicalAccessRepeater.DataBind();
                 }
             }
         }
@@ -399,7 +400,7 @@ namespace sselData
             }
         }
 
-        protected void dgClient_ItemCommand(object source, DataGridCommandEventArgs e)
+        protected void ClientDataGrid_ItemCommand(object source, DataGridCommandEventArgs e)
         {
             int sessionOrgId = GetSessionOrgID();
 
@@ -427,9 +428,9 @@ namespace sselData
                     cblPriv.ClearSelection();
                     cblCommunities.ClearSelection();
                     ddlTechnicalInterest.ClearSelection();
-                    rdolistBillingType.ClearSelection();
+                    BillingTypeRadioButtonList.ClearSelection();
                     //by default, we select the regular billing type
-                    foreach (ListItem btn in rdolistBillingType.Items)
+                    foreach (ListItem btn in BillingTypeRadioButtonList.Items)
                     {
                         if (btn.Text == "Regular")
                         {
@@ -440,8 +441,8 @@ namespace sselData
 
                     ClearClientOrgPanel();
 
-                    btnClientSave.CommandArgument = "0";
-                    btnClientSave.Text = "Store New Client";
+                    ClientSaveButton.CommandArgument = "0";
+                    ClientSaveButton.Text = "Store New Client";
 
                     // if org has DefClientAddr, add row to addr table with this info
                     DataRow odr = dsClient.Tables["Org"].Rows.Find(sessionOrgId);
@@ -464,7 +465,7 @@ namespace sselData
                     SetPageControlsAndBind(true, false, true, false, false);
                     break;
                 case "Edit":
-                    clientId = Convert.ToInt32(dgClient.DataKeys[e.Item.ItemIndex]);
+                    clientId = Convert.ToInt32(ClientDataGrid.DataKeys[e.Item.ItemIndex]);
                     cdr = dsClient.Tables["Client"].Rows.Find(clientId);
 
                     txtFName.Text = cdr["FName"].ToString();
@@ -499,27 +500,27 @@ namespace sselData
                     codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", cdr["ClientID"], sessionOrgId));
                     FillClientOrgPanel(codrs[0]);
 
-                    btnClientSave.CommandArgument = clientId.ToString();
-                    btnClientSave.Text = "Store modified data";
+                    ClientSaveButton.CommandArgument = clientId.ToString();
+                    ClientSaveButton.Text = "Store modified data";
 
                     Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
                     SetPageControlsAndBind(true, false, true, false, false);
 
                     //need to bind again to evoke the data bound event of rdolistBillingType so correct billingtype can be set
-                    rdolistBillingType.DataBind();
+                    BillingTypeRadioButtonList.DataBind();
                     break;
                 case "AddExisting":
-                    ddlClient.Enabled = true;
+                    ClientDropDownList.Enabled = true;
                     SetClientDDL();
-                    btnClientSave.CommandArgument = "-1";
-                    btnClientSave.Text = "Add Client to Organization";
+                    ClientSaveButton.CommandArgument = "-1";
+                    ClientSaveButton.Text = "Add Client to Organization";
                     SetPageControlsAndBind(false, true, false, false, false);
                     break;
                 case "Delete":
                     // check if managing accounts or people first
                     string cannotDelete = string.Empty;
 
-                    clientId = Convert.ToInt32(dgClient.DataKeys[e.Item.ItemIndex]);
+                    clientId = Convert.ToInt32(ClientDataGrid.DataKeys[e.Item.ItemIndex]);
                     codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", clientId, sessionOrgId));
 
                     if (codrs.Length == 0)
@@ -575,7 +576,7 @@ namespace sselData
                             cannotDelete += "Curently managing the following accounts: ";
                         else
                             cannotDelete += "; ";
-                        cannotDelete += madrs[i].Field<string>(rblAcctDisplay.SelectedValue);
+                        cannotDelete += madrs[i].Field<string>(AcctDisplayRadioButtonList.SelectedValue);
                     }
 
 
@@ -655,11 +656,14 @@ namespace sselData
 
         private bool CanDeleteClientManager(int ClientOrgID)
         {
-            repo.ClientOrg co = DA.Current.Single<repo.ClientOrg>(ClientOrgID);
+            var co = DA.Current.Single<Data.ClientOrg>(ClientOrgID);
+
             if (!co.Client.Active)
                 return true;
+
             if (!co.Active)
                 return true;
+
             return false;
         }
 
@@ -697,7 +701,7 @@ namespace sselData
             pp2.SelectedPeriod = new DateTime(NewFacultyStartDate.Year, NewFacultyStartDate.Month, 1);
         }
 
-        protected void dgClient_ItemDataBound(object sender, DataGridItemEventArgs e)
+        protected void ClientDataGrid_ItemDataBound(object sender, DataGridItemEventArgs e)
         {
             int sessionOrgId = GetSessionOrgID();
 
@@ -716,11 +720,11 @@ namespace sselData
                     int ClientOrgID = Convert.ToInt32(codrs[0]["ClientOrgID"]);
                     if (ClientOrgID > 0) //If the ClientOrg was just added, and changes haven't been saved yet, then ClientOrgID = -1
                     {
-                        repo.ClientOrg co = DA.Current.Single<repo.ClientOrg>(ClientOrgID);
+                        var co = DA.Current.Single<Data.ClientOrg>(ClientOrgID);
                         if (co != null) //Just in case...
                         {
-                            if (co.HasDryBox())
-                                lit.Text = string.Format(@"<img src=""images/im_drybox.gif"" title=""DryBox reserved with account: {0}"" />", co.GetDryBoxClientAccount().Account.Name);
+                            if (DryBoxManager.HasDryBox(co))
+                                lit.Text = string.Format(@"<img src=""images/im_drybox.gif"" title=""DryBox reserved with account: {0}"" />", DryBoxManager.GetDryBoxClientAccount(co).Account.Name);
                         }
                     }
                 }
@@ -728,13 +732,13 @@ namespace sselData
         }
 
         // serves to page dgClient
-        protected void ddlPager_SelectedIndexChanged(object sender, EventArgs e)
+        protected void PagerDropDownList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            dgClient.CurrentPageIndex = Convert.ToInt32(ddlPager.SelectedValue); // selectedItem should also work
+            ClientDataGrid.CurrentPageIndex = Convert.ToInt32(PagerDropDownList.SelectedValue); // selectedItem should also work
             SetPageControlsAndBind(false, false, false, false, false);
         }
 
-        protected void dgClient_SortCommand(object source, DataGridSortCommandEventArgs e)
+        protected void ClientDataGrid_SortCommand(object source, DataGridSortCommandEventArgs e)
         {
             //Flip-flop sort direction 
             if (ViewState["dgClientSortDir"].ToString() == " ASC")
@@ -745,12 +749,12 @@ namespace sselData
             SetPageControlsAndBind(false, false, false, false, false);
         }
 
-        protected void ddlOrg_SelectedIndexChanged(object sender, EventArgs e)
+        protected void OrgDropDownList_SelectedIndexChanged(object sender, EventArgs e)
         {
             SetClientDDL();
         }
 
-        protected void txtName_TextChanged(object sender, EventArgs e)
+        protected void NameTextBox_TextChanged(object sender, EventArgs e)
         {
             SetClientDDL(); // name filter 
         }
@@ -761,21 +765,21 @@ namespace sselData
             dv.Sort = "DisplayInfo ASC";
             dv.RowFilter = "DisplayInfo <> ''";
 
-            ddlClient.DataSource = dv;
-            ddlClient.DataTextField = "DisplayInfo";
-            ddlClient.DataValueField = "ClientID";
-            ddlClient.DataBind();
+            ClientDropDownList.DataSource = dv;
+            ClientDropDownList.DataTextField = "DisplayInfo";
+            ClientDropDownList.DataValueField = "ClientID";
+            ClientDropDownList.DataBind();
 
             // now, go through and remove items that do not meet the filters
-            for (int i = ddlClient.Items.Count - 1; i >= 0; i--)
+            for (int i = ClientDropDownList.Items.Count - 1; i >= 0; i--)
             {
                 // remove items whose DisplayInfo does not contain the org of interest
                 bool noskip = true;
-                if (Convert.ToInt32(ddlOrg.SelectedValue) > 0)
+                if (Convert.ToInt32(OrgDropDownList.SelectedValue) > 0)
                 {
-                    if (!ddlClient.Items[i].Text.Contains(ddlOrg.SelectedItem.Text))
+                    if (!ClientDropDownList.Items[i].Text.Contains(OrgDropDownList.SelectedItem.Text))
                     {
-                        ddlClient.Items.Remove(ddlClient.Items[i]);
+                        ClientDropDownList.Items.Remove(ClientDropDownList.Items[i]);
                         noskip = false;
                     }
                 }
@@ -783,27 +787,30 @@ namespace sselData
                 // only match specified text
                 if (noskip)
                 {
-                    if (txtName.Text.Trim().Length > 0)
+                    if (NameTextBox.Text.Trim().Length > 0)
                     {
-                        if (!ddlClient.Items[i].Text.ToLower().Contains(txtName.Text.Trim().ToLower()))
-                            ddlClient.Items.Remove(ddlClient.Items[i]);
+                        if (!ClientDropDownList.Items[i].Text.ToLower().Contains(NameTextBox.Text.Trim().ToLower()))
+                            ClientDropDownList.Items.Remove(ClientDropDownList.Items[i]);
                     }
                 }
             }
 
             // now add a blank item so SelectedIndexChnaged works for the first name in the list
-            ListItem blankItem = new ListItem();
-            blankItem.Value = "0";
-            blankItem.Text = string.Empty;
-            ddlClient.Items.Insert(0, blankItem);
+            ListItem blankItem = new ListItem
+            {
+                Value = "0",
+                Text = string.Empty
+            };
+
+            ClientDropDownList.Items.Insert(0, blankItem);
         }
 
-        protected void ddlClient_SelectedIndexChanged(object sender, EventArgs e)
+        protected void ClientDropDownList_SelectedIndexChanged(object sender, EventArgs e)
         {
             int sessionOrgId = GetSessionOrgID();
 
             // if client is currently inactive, reactivate
-            DataRow cdr = dsClient.Tables["Client"].Rows.Find(ddlClient.SelectedValue);
+            DataRow cdr = dsClient.Tables["Client"].Rows.Find(ClientDropDownList.SelectedValue);
             if (cdr.RowState == DataRowState.Modified) // must have just been disabled
                 cdr.RejectChanges();
             else
@@ -816,7 +823,7 @@ namespace sselData
             }
 
             // check if Client has previous affiliation with org
-            DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", ddlClient.SelectedValue, sessionOrgId));
+            DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", ClientDropDownList.SelectedValue, sessionOrgId));
             if (codrs.Length == 1)
             {
                 if (codrs[0].RowState == DataRowState.Modified) // must have just been disabled
@@ -958,13 +965,13 @@ namespace sselData
                 }
             }
 
-            ddlClient.Enabled = false;
-            btnClientSave.CommandArgument = ddlClient.SelectedValue;
+            ClientDropDownList.Enabled = false;
+            ClientSaveButton.CommandArgument = ClientDropDownList.SelectedValue;
             SetPageControlsAndBind(false, true, true, false, false);
         }
 
         // This function is the single user save function - it save to the dataset instead of back to database
-        protected void btnClientSave_Click(Object sender, EventArgs e)
+        protected void ClientSaveButton_Click(Object sender, EventArgs e)
         {
             panLDAPLookup.Visible = false;
 
@@ -1011,7 +1018,7 @@ namespace sselData
             {
                 bool doStore = true;
 
-                if (btnClientSave.Text.ToLower().Contains("new"))
+                if (ClientSaveButton.Text.ToLower().Contains("new"))
                 {
                     // first check that username is 20 char or less
                     if (txtUsername.Text.Trim().Length > 20)
@@ -1059,11 +1066,11 @@ namespace sselData
                 //However, the implmentation of this mechanism in this page still has bugs - that things might still get saved even users click cancel button
                 //To debug this problem takes too much time, so users are warned to save everything right after they made changes
                 //Due to this bug, the newly added controls here will use the direct save methond - changes are pushed to server immediately
-                if (btnClientSave.Text.ToLower().Contains("new") || true)
+                if (ClientSaveButton.Text.ToLower().Contains("new") || true)
                 {
                     try
                     {
-                        BillingTypeDA.SetBillingTypeID(selectedClientOrgId, Convert.ToInt32(rdolistBillingType.SelectedItem.Value));
+                        BillingTypeDA.SetBillingTypeID(selectedClientOrgId, Convert.ToInt32(BillingTypeRadioButtonList.SelectedItem.Value));
                     }
                     catch { }
                 }
@@ -1075,11 +1082,9 @@ namespace sselData
             int sessionOrgId = GetSessionOrgID();
 
             // add rows to Client, ClientSite and ClientOrg for new entries
-            bool isNewClientEntry = btnClientSave.Text.ToLower().Contains("new");
-            bool addExistingClient = btnClientSave.Text.ToLower().Contains("add");
-            int clientId = isNewClientEntry ? 0 : Convert.ToInt32(btnClientSave.CommandArgument);
-            bool enableAccessError;
-            string alertMsg;
+            bool isNewClientEntry = ClientSaveButton.Text.ToLower().Contains("new");
+            bool addExistingClient = ClientSaveButton.Text.ToLower().Contains("add");
+            int clientId = isNewClientEntry ? 0 : Convert.ToInt32(ClientSaveButton.CommandArgument);
 
             DataUtility.StoreClientInfo(
                 dtClient: dsClient.Tables["Client"],
@@ -1112,8 +1117,8 @@ namespace sselData
                 newFacultyStartDate: pp2.SelectedPeriod,
                 clientId: ref clientId,
                 clientOrgId: ref selectedClientOrgId,
-                alertMsg: out alertMsg,
-                enableAccessError: out enableAccessError);
+                alertMsg: out string alertMsg,
+                enableAccessError: out bool enableAccessError);
 
             if (enableAccessError)
             {
@@ -1137,7 +1142,7 @@ namespace sselData
                 return Convert.ToInt32(rbl.SelectedValue);
         }
 
-        protected void btnClientQuit_Click(object sender, EventArgs e)
+        protected void ClientQuitButton_Click(object sender, EventArgs e)
         {
             int sessionOrgId = GetSessionOrgID();
 
@@ -1152,7 +1157,7 @@ namespace sselData
                 sdrs[0].Delete();
 
             // unmark any addresses that were removed - only need to check for non-new entries
-            int clientId = Convert.ToInt32(btnClientSave.CommandArgument);
+            int clientId = Convert.ToInt32(ClientSaveButton.CommandArgument);
             if (clientId != 0)
             {
                 sdrs = dsClient.Tables["Address"].Select("AddDelete = 0");
@@ -1169,12 +1174,12 @@ namespace sselData
             SetPageControlsAndBind(false, false, false, false, false);
         }
 
-        protected void btnExistingQuit_Click(object sender, EventArgs e)
+        protected void ExistingQuitButton_Click(object sender, EventArgs e)
         {
             SetPageControlsAndBind(false, false, false, false, false);
         }
 
-        protected void dgAddress_ItemCommand(object source, DataGridCommandEventArgs e)
+        protected void AddressDataGrid_ItemCommand(object source, DataGridCommandEventArgs e)
         {
             AlertInfo[] strValidate = new AlertInfo[3];
 
@@ -1212,12 +1217,12 @@ namespace sselData
                     break;
                 case "Edit":
                     //Datagrid in edit mode, hide footer section 
-                    dgAddress.EditItemIndex = Convert.ToInt32(e.Item.ItemIndex);
+                    AddressDataGrid.EditItemIndex = Convert.ToInt32(e.Item.ItemIndex);
                     SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, true, false);
                     break;
                 case "Cancel":
                     //Datagrid leaving edit mode 
-                    dgAddress.EditItemIndex = -1;
+                    AddressDataGrid.EditItemIndex = -1;
                     SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     break;
                 case "Update":
@@ -1229,7 +1234,7 @@ namespace sselData
                     strValidate[2].Comment = "a state.";
                     if (ValidateField(strValidate))
                     {
-                        AddressID = Convert.ToInt32(dgAddress.DataKeys[e.Item.ItemIndex]);
+                        AddressID = Convert.ToInt32(AddressDataGrid.DataKeys[e.Item.ItemIndex]);
                         sdr = dsClient.Tables["Address"].Rows.Find(AddressID);
                         sdr["InternalAddress"] = ((TextBox)e.Item.FindControl("txtInternalAddress")).Text;
                         sdr["StrAddress1"] = ((TextBox)e.Item.FindControl("txtStrAddress1")).Text;
@@ -1240,12 +1245,12 @@ namespace sselData
                         sdr["Country"] = ((TextBox)e.Item.FindControl("txtCountry")).Text;
 
                         Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
-                        dgAddress.EditItemIndex = -1;
+                        AddressDataGrid.EditItemIndex = -1;
                         SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     }
                     break;
                 case "Delete":
-                    AddressID = Convert.ToInt32(dgAddress.DataKeys[e.Item.ItemIndex]);
+                    AddressID = Convert.ToInt32(AddressDataGrid.DataKeys[e.Item.ItemIndex]);
                     sdr = dsClient.Tables["Address"].Rows.Find(AddressID);
                     if (sdr["AddDelete"] == DBNull.Value) // untouched - mark for deletion
                     {
@@ -1267,7 +1272,7 @@ namespace sselData
             }
         }
 
-        protected void dgAddress_ItemDataBound(object sender, DataGridItemEventArgs e)
+        protected void AddressDataGrid_ItemDataBound(object sender, DataGridItemEventArgs e)
         {
             DataRowView drv = (DataRowView)e.Item.DataItem;
 
@@ -1284,12 +1289,12 @@ namespace sselData
             else if (e.Item.ItemType == ListItemType.Footer)
             {
                 // show unused items
-                if (dgAddress.Items.Count == 1)
-                    dgAddress.ShowFooter = false;
+                if (AddressDataGrid.Items.Count == 1)
+                    AddressDataGrid.ShowFooter = false;
                 else
                 {
-                    if (dgAddress.EditItemIndex == -1)
-                        dgAddress.ShowFooter = true;
+                    if (AddressDataGrid.EditItemIndex == -1)
+                        AddressDataGrid.ShowFooter = true;
                 }
                 ((TextBox)e.Item.FindControl("txtCountryF")).Text = "US";
             }
@@ -1334,12 +1339,12 @@ namespace sselData
                 return true;
         }
 
-        protected void dgClientManager_ItemCommand(object source, DataGridCommandEventArgs e)
+        protected void ClientManagerDataGrid_ItemCommand(object source, DataGridCommandEventArgs e)
         {
             int sessionOrgId = GetSessionOrgID();
 
             // check if client manager relationship exists
-            int clientId = Convert.ToInt32(btnClientSave.CommandArgument);
+            int clientId = Convert.ToInt32(ClientSaveButton.CommandArgument);
             DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", clientId, sessionOrgId));
 
             int clientOrgId;
@@ -1375,7 +1380,7 @@ namespace sselData
                     }
                     break;
                 case "Delete":
-                    int key = Convert.ToInt32(dgClientManager.DataKeys[e.Item.ItemIndex]);
+                    int key = Convert.ToInt32(ClientManagerDataGrid.DataKeys[e.Item.ItemIndex]);
                     //Dim cadrs() As DataRow
                     DataRow[] madrs = dsClient.Tables["ClientAccount"].Select(string.Format("Active = 1 AND Manager = 1 AND ClientOrgID = {0}", key));
 
@@ -1407,7 +1412,7 @@ namespace sselData
             }
         }
 
-        protected void dgClientManager_ItemDataBound(object sender, DataGridItemEventArgs e)
+        protected void ClientManagerDataGrid_ItemDataBound(object sender, DataGridItemEventArgs e)
         {
             int sessionOrgId = GetSessionOrgID();
 
@@ -1425,8 +1430,8 @@ namespace sselData
                 ddlMgr.DataBind();
 
                 // remove managers from ddl that have alrady been selected
-                for (int i = 0; i < dgClientManager.DataKeys.Count; i++)
-                    ddlMgr.Items.Remove(ddlMgr.Items.FindByValue(dgClientManager.DataKeys[i].ToString()));
+                for (int i = 0; i < ClientManagerDataGrid.DataKeys.Count; i++)
+                    ddlMgr.Items.Remove(ddlMgr.Items.FindByValue(ClientManagerDataGrid.DataKeys[i].ToString()));
             }
             else if (e.Item.ItemType == ListItemType.AlternatingItem || e.Item.ItemType == ListItemType.Item)
             {
@@ -1436,7 +1441,7 @@ namespace sselData
             }
         }
 
-        protected void rblAcctDisplay_SelectedIndexChanged(object sender, EventArgs e)
+        protected void AcctDisplayRadioButtonList_SelectedIndexChanged(object sender, EventArgs e)
         {
             UpdateAccountList();
         }
@@ -1446,7 +1451,7 @@ namespace sselData
             int sessionOrgId = GetSessionOrgID();
 
             // get list of client's managers
-            int clientId = Convert.ToInt32(btnClientSave.CommandArgument);
+            int clientId = Convert.ToInt32(ClientSaveButton.CommandArgument);
             DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", clientId, sessionOrgId));
 
             int clientOrgId;
@@ -1466,10 +1471,12 @@ namespace sselData
                 {
                     if (items.FirstOrDefault(x => x.Value == cadrs[j]["AccountID"].ToString()) == null)
                     {
-                        ListItem mgrAcct = new ListItem();
-                        mgrAcct.Text = MakeAcctNumber(cadrs[j][rblAcctDisplay.SelectedValue].ToString());
-                        mgrAcct.Value = cadrs[j]["AccountID"].ToString();
-                        //ddlAccount.Items.Add(mgrAcct);
+                        ListItem mgrAcct = new ListItem
+                        {
+                            Text = MakeAcctNumber(cadrs[j][AcctDisplayRadioButtonList.SelectedValue].ToString()),
+                            Value = cadrs[j]["AccountID"].ToString()
+                        };
+
                         items.Add(mgrAcct);
                     }
                 }
@@ -1483,17 +1490,19 @@ namespace sselData
                 {
                     if (items.FirstOrDefault(x => x.Value == cadrs[j]["AccountID"].ToString()) == null)
                     {
-                        ListItem mgrAcct = new ListItem();
-                        mgrAcct.Text = MakeAcctNumber(cadrs[j][rblAcctDisplay.SelectedValue].ToString());
-                        mgrAcct.Value = cadrs[j]["AccountID"].ToString();
-                        //ddlAccount.Items.Add(mgrAcct);
+                        ListItem mgrAcct = new ListItem
+                        {
+                            Text = MakeAcctNumber(cadrs[j][AcctDisplayRadioButtonList.SelectedValue].ToString()),
+                            Value = cadrs[j]["AccountID"].ToString()
+                        };
+
                         items.Add(mgrAcct);
                     }
                 }
             }
 
             if (items.Count == 0)
-                ddlAccount.Enabled = false;
+                AccountDropDownList.Enabled = false;
             else
             {
                 var ordered = items.OrderBy(x => x.Text).ToList();
@@ -1504,12 +1513,12 @@ namespace sselData
                 ListItem clientAcct = null;
                 DataRow[] cadrs = dsClient.Tables["ClientAccount"].Select(string.Format("Active = 1 AND ClientOrgID = {0}", clientOrgId));
 
-                ddlAccount.DataSource = ordered;
-                ddlAccount.DataBind();
+                AccountDropDownList.DataSource = ordered;
+                AccountDropDownList.DataBind();
 
                 for (int j = 0; j < cadrs.Length; j++)
                 {
-                    clientAcct = ddlAccount.Items.FindByValue(cadrs[j]["AccountID"].ToString());
+                    clientAcct = AccountDropDownList.Items.FindByValue(cadrs[j]["AccountID"].ToString());
                     if (clientAcct != null)
                     {
                         clientAcct.Selected = true;
@@ -1517,14 +1526,14 @@ namespace sselData
                     }
                 }
 
-                ddlAccount.Enabled = true;
+                AccountDropDownList.Enabled = true;
             }
         }
 
         private string MakeAcctNumber(string strBase)
         {
             string strNumber;
-            if (rblAcctDisplay.SelectedValue == "Number")
+            if (AcctDisplayRadioButtonList.SelectedValue == "Number")
             {
                 strNumber = strBase.Substring(0, 6) + "-";
                 strNumber += strBase.Substring(6, 5) + "-";
@@ -1538,10 +1547,10 @@ namespace sselData
             return strNumber;
         }
 
-        protected void ddlAccount_SelectedIndexChanged(object sender, EventArgs e)
+        protected void AccountDropDownList_SelectedIndexChanged(object sender, EventArgs e)
         {
             int sessionOrgId = GetSessionOrgID();
-            int clientId = Convert.ToInt32(btnClientSave.CommandArgument);
+            int clientId = Convert.ToInt32(ClientSaveButton.CommandArgument);
             DataRow cdr = dsClient.Tables["Client"].Rows.Find(clientId);
             DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", clientId, sessionOrgId));
 
@@ -1552,15 +1561,15 @@ namespace sselData
                 ClientOrgID = 0; // means that cadr will have no rows
 
             // upate row in clientAccount as needed
-            if (ddlAccount.SelectedIndex > 0)
+            if (AccountDropDownList.SelectedIndex > 0)
             {
                 // see if user is associated with selected account
-                DataRow[] cadrs = dsClient.Tables["ClientAccount"].Select(string.Format("ClientOrgID = {0} AND AccountID = {1}", ClientOrgID, ddlAccount.SelectedValue));
+                DataRow[] cadrs = dsClient.Tables["ClientAccount"].Select(string.Format("ClientOrgID = {0} AND AccountID = {1}", ClientOrgID, AccountDropDownList.SelectedValue));
                 if (cadrs.Length == 0) // this account is not currently assigned
                 {
                     DataRow cadr = dsClient.Tables["ClientAccount"].NewRow();
                     cadr["ClientOrgID"] = ClientOrgID;
-                    cadr["AccountID"] = ddlAccount.SelectedValue;
+                    cadr["AccountID"] = AccountDropDownList.SelectedValue;
                     cadr["Manager"] = false;
                     cadr["Active"] = true;
                     dsClient.Tables["ClientAccount"].Rows.Add(cadr);
@@ -1570,7 +1579,7 @@ namespace sselData
 
                 // this does not remove previously associated accounts, it only adds the new one
                 //   and removes any newly added ones
-                cadrs = dsClient.Tables["ClientAccount"].Select(string.Format("ClientOrgID = {0} AND AccountID <> {1}", ClientOrgID, ddlAccount.SelectedValue));
+                cadrs = dsClient.Tables["ClientAccount"].Select(string.Format("ClientOrgID = {0} AND AccountID <> {1}", ClientOrgID, AccountDropDownList.SelectedValue));
                 for (int i = 0; i < cadrs.Length; i++)
                 {
                     if (cadrs[i].RowState == DataRowState.Added)
@@ -1592,7 +1601,21 @@ namespace sselData
             Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
         }
 
-        protected void btnSave_Click(object sender, EventArgs e)
+        protected void SaveButton_Click(object sender, EventArgs e)
+        {
+            HandleSave();
+
+            if (string.IsNullOrEmpty(litError.Text))
+                DiscardButton_Click(sender, e);
+            else
+            {
+                litError.Text += @"<div style=""padding-top: 10px;"">Some data may have been saved.</div>";
+                panDialogError.Visible = true;
+                panDisplay.Visible = false;
+            }
+        }
+
+        protected void HandleSave()
         {
             litError.Text = string.Empty;
 
@@ -1600,13 +1623,24 @@ namespace sselData
 
             // update the Client table - use handler to update ClientOrg table
             SqlDataAdapter daClient = new SqlDataAdapter();
-            daClient.RowUpdating += daClient_RowUpdating;
-            daClient.RowUpdated += daClient_RowUpdated;
-            //AddHandler daClient.RowUpdating, New SqlRowUpdatingEventHandler(AddressOf daClientRowUpdating)
-            //AddHandler daClient.RowUpdated, New SqlRowUpdatedEventHandler(AddressOf daClientRowUpdated)
 
-            daClient.InsertCommand = new SqlCommand("Client_Insert", cnSselData);
-            daClient.InsertCommand.CommandType = CommandType.StoredProcedure;
+            daClient.RowUpdating += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                    oldClientID = Convert.ToInt32(e.Row["ClientID"]);
+            };
+
+            daClient.RowUpdated += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                {
+                    // update ClientOrg, exactly one row will match
+                    DataRow[] codrs = dsClient.Tables["ClientOrg"].Select($"ClientID = {oldClientID}");
+                    codrs[0]["ClientID"] = e.Row["ClientID"];
+                }
+            };
+
+            daClient.InsertCommand = new SqlCommand("Client_Insert", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClient.InsertCommand.Parameters.Add("@FName", SqlDbType.NVarChar, 20, "FName");
             daClient.InsertCommand.Parameters.Add("@MName", SqlDbType.NVarChar, 20, "MName");
             daClient.InsertCommand.Parameters.Add("@LName", SqlDbType.NVarChar, 30, "LName");
@@ -1622,8 +1656,7 @@ namespace sselData
             daClient.InsertCommand.Parameters.Add("@TechnicalInterestID", SqlDbType.Int, 4, "TechnicalInterestID");
             daClient.InsertCommand.Parameters.Add("@EnableAccess", SqlDbType.Bit, 1, "EnableAccess");
 
-            daClient.UpdateCommand = new SqlCommand("Client_Update", cnSselData);
-            daClient.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daClient.UpdateCommand = new SqlCommand("Client_Update", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClient.UpdateCommand.Parameters.AddWithValue("@Action", "Update");
             daClient.UpdateCommand.Parameters.Add("@ClientID", SqlDbType.Int, 4, "ClientID");
             daClient.UpdateCommand.Parameters.Add("@FName", SqlDbType.NVarChar, 20, "FName");
@@ -1652,13 +1685,23 @@ namespace sselData
             // update the address table - use handler to update ClientOrg table
 
             SqlDataAdapter daAddress = new SqlDataAdapter();
-            daAddress.RowUpdating += daAddress_RowUpdating;
-            daAddress.RowUpdated += daAddress_RowUpdated;
-            //AddHandler daAddress.RowUpdating, New SqlRowUpdatingEventHandler(AddressOf daAddressRowUpdating)
-            //AddHandler daAddress.RowUpdated, New SqlRowUpdatedEventHandler(AddressOf daAddressRowUpdated)
+            daAddress.RowUpdating += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                    oldAddressID = Convert.ToInt32(e.Row["AddressID"]);
+            };
 
-            daAddress.InsertCommand = new SqlCommand("Address_Insert", cnSselData);
-            daAddress.InsertCommand.CommandType = CommandType.StoredProcedure;
+            daAddress.RowUpdated += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                {
+                    // exactly one row will match
+                    DataRow[] codrs = dsClient.Tables["ClientOrg"].Select($"ClientAddressID = {oldAddressID}");
+                    codrs[0]["ClientAddressID"] = e.Row["AddressID"];
+                }
+            };
+
+            daAddress.InsertCommand = new SqlCommand("Address_Insert", cnSselData) { CommandType = CommandType.StoredProcedure };
             daAddress.InsertCommand.Parameters.Add("@InternalAddress", SqlDbType.NVarChar, 50, "InternalAddress");
             daAddress.InsertCommand.Parameters.Add("@StrAddress1", SqlDbType.NVarChar, 50, "StrAddress1");
             daAddress.InsertCommand.Parameters.Add("@StrAddress2", SqlDbType.NVarChar, 50, "StrAddress2");
@@ -1667,8 +1710,7 @@ namespace sselData
             daAddress.InsertCommand.Parameters.Add("@Zip", SqlDbType.NVarChar, 12, "Zip");
             daAddress.InsertCommand.Parameters.Add("@Country", SqlDbType.NVarChar, 50, "Country");
 
-            daAddress.UpdateCommand = new SqlCommand("Address_Update", cnSselData);
-            daAddress.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daAddress.UpdateCommand = new SqlCommand("Address_Update", cnSselData) { CommandType = CommandType.StoredProcedure };
             daAddress.UpdateCommand.Parameters.Add("@AddressID", SqlDbType.Int, 4, "AddressID");
             daAddress.UpdateCommand.Parameters.Add("@InternalAddress", SqlDbType.NVarChar, 50, "InternalAddress");
             daAddress.UpdateCommand.Parameters.Add("@StrAddress1", SqlDbType.NVarChar, 50, "StrAddress1");
@@ -1678,8 +1720,7 @@ namespace sselData
             daAddress.UpdateCommand.Parameters.Add("@Zip", SqlDbType.NVarChar, 12, "Zip");
             daAddress.UpdateCommand.Parameters.Add("@Country", SqlDbType.NVarChar, 50, "Country");
 
-            daAddress.DeleteCommand = new SqlCommand("Address_Delete", cnSselData);
-            daAddress.DeleteCommand.CommandType = CommandType.StoredProcedure;
+            daAddress.DeleteCommand = new SqlCommand("Address_Delete", cnSselData) { CommandType = CommandType.StoredProcedure };
             daAddress.DeleteCommand.Parameters.Add("@AddressID", SqlDbType.Int, 4, "AddressID");
 
             try
@@ -1693,13 +1734,32 @@ namespace sselData
 
             // update the ClientOrg table
             SqlDataAdapter daClientOrg = new SqlDataAdapter();
-            daClientOrg.RowUpdating += daClientOrg_RowUpdating;
-            daClientOrg.RowUpdated += daClientOrg_RowUpdated;
-            //AddHandler daClientOrg.RowUpdating, New SqlRowUpdatingEventHandler(AddressOf daClientOrgRowUpdating)
-            //AddHandler daClientOrg.RowUpdated, New SqlRowUpdatedEventHandler(AddressOf daClientOrgRowUpdated)
+            daClientOrg.RowUpdating += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                    oldClientOrgID = Convert.ToInt32(e.Row["ClientOrgID"]);
+            };
 
-            daClientOrg.InsertCommand = new SqlCommand("ClientOrg_Insert", cnSselData);
-            daClientOrg.InsertCommand.CommandType = CommandType.StoredProcedure;
+            daClientOrg.RowUpdated += (sender, e) =>
+            {
+                if (e.StatementType == StatementType.Insert)
+                {
+                    // update ClientManager, exactly one row may match
+                    DataRow[] cmdrs = dsClient.Tables["ClientManager"].Select($"ClientOrgID = {oldClientID}");
+                    for (int i = 0; i < cmdrs.Length; i++)
+                        cmdrs[i]["ClientOrgID"] = e.Row["ClientOrgID"];
+
+                    // update ClientAccount, exactly one row may match
+                    DataRow[] cadrs = dsClient.Tables["ClientAccount"].Select($"ClientOrgID = {oldClientID}");
+                    if (cadrs.Length == 1)
+                        cadrs[0]["ClientOrgID"] = e.Row["ClientOrgID"];
+
+                    //Save the billing type permanently in database, since we alreayd know the newly created ClientOrgID
+                    BillingTypeDA.SetBillingTypeID(Convert.ToInt32(e.Row["ClientOrgID"]), Convert.ToInt32(BillingTypeRadioButtonList.SelectedItem.Value));
+                }
+            };
+
+            daClientOrg.InsertCommand = new SqlCommand("ClientOrg_Insert", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClientOrg.InsertCommand.Parameters.Add("@ClientID", SqlDbType.Int, 4, "ClientID");
             daClientOrg.InsertCommand.Parameters.Add("@OrgID", SqlDbType.Int, 4, "OrgID");
             daClientOrg.InsertCommand.Parameters.Add("@DepartmentID", SqlDbType.Int, 4, "DepartmentID");
@@ -1713,8 +1773,7 @@ namespace sselData
             daClientOrg.InsertCommand.Parameters.Add("@IsFinManager", SqlDbType.Bit, 1, "IsFinManager");
             daClientOrg.InsertCommand.Parameters.Add("@Active", SqlDbType.Bit, 1, "Active");
 
-            daClientOrg.UpdateCommand = new SqlCommand("ClientOrg_Update", cnSselData);
-            daClientOrg.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daClientOrg.UpdateCommand = new SqlCommand("ClientOrg_Update", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClientOrg.UpdateCommand.Parameters.Add("@ClientOrgID", SqlDbType.Int, 4, "ClientOrgID");
             daClientOrg.UpdateCommand.Parameters.Add("@DepartmentID", SqlDbType.Int, 4, "DepartmentID");
             daClientOrg.UpdateCommand.Parameters.Add("@RoleID", SqlDbType.Int, 4, "RoleID");
@@ -1737,15 +1796,12 @@ namespace sselData
             }
 
             // update the ClientManager table
-            SqlDataAdapter daClientManager = new SqlDataAdapter();
-
-            daClientManager.InsertCommand = new SqlCommand("ClientManager_Insert", cnSselData);
+            SqlDataAdapter daClientManager = new SqlDataAdapter { InsertCommand = new SqlCommand("ClientManager_Insert", cnSselData) };
             daClientManager.InsertCommand.CommandType = CommandType.StoredProcedure;
             daClientManager.InsertCommand.Parameters.Add("@ClientOrgID", SqlDbType.Int, 4, "ClientOrgID");
             daClientManager.InsertCommand.Parameters.Add("@ManagerOrgID", SqlDbType.Int, 4, "ManagerOrgID");
 
-            daClientManager.UpdateCommand = new SqlCommand("ClientManager_Update", cnSselData);
-            daClientManager.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daClientManager.UpdateCommand = new SqlCommand("ClientManager_Update", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClientManager.UpdateCommand.Parameters.Add("@ClientManagerID", SqlDbType.Int, 4, "ClientManagerID");
             daClientManager.UpdateCommand.Parameters.Add("@Active", SqlDbType.Int, 4, "Active");
 
@@ -1759,17 +1815,17 @@ namespace sselData
             }
 
             // update the ClientAccount table
-            SqlDataAdapter daClientAccount = new SqlDataAdapter();
+            SqlDataAdapter daClientAccount = new SqlDataAdapter
+            {
+                InsertCommand = new SqlCommand("ClientAccount_Insert", cnSselData) { CommandType = CommandType.StoredProcedure }
+            };
 
-            daClientAccount.InsertCommand = new SqlCommand("ClientAccount_Insert", cnSselData);
-            daClientAccount.InsertCommand.CommandType = CommandType.StoredProcedure;
             daClientAccount.InsertCommand.Parameters.Add("@ClientOrgID", SqlDbType.Int, 4, "ClientOrgID");
             daClientAccount.InsertCommand.Parameters.Add("@AccountID", SqlDbType.Int, 4, "AccountID");
             daClientAccount.InsertCommand.Parameters.Add("@Manager", SqlDbType.Bit, 1, "Manager");
             daClientAccount.InsertCommand.Parameters.Add("@Active", SqlDbType.Bit, 1, "Active");
 
-            daClientAccount.UpdateCommand = new SqlCommand("ClientAccount_Update", cnSselData);
-            daClientAccount.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daClientAccount.UpdateCommand = new SqlCommand("ClientAccount_Update", cnSselData) { CommandType = CommandType.StoredProcedure };
             daClientAccount.UpdateCommand.Parameters.Add("@ClientAccountID", SqlDbType.Int, 4, "ClientAccountID");
             daClientAccount.UpdateCommand.Parameters.Add("@Manager", SqlDbType.Bit, 1, "Manager");
             daClientAccount.UpdateCommand.Parameters.Add("@Active", SqlDbType.Int, 4, "Active");
@@ -1782,91 +1838,23 @@ namespace sselData
             {
                 litError.Text += string.Format(@"<div class=""error"">ClientAccount update error:<br />{0}</div>", ex.Message);
             }
-
-            if (string.IsNullOrEmpty(litError.Text))
-                btnDiscard_Click(sender, e);
-            else
-            {
-                litError.Text += @"<div style=""padding-top: 10px;"">Some data may have been saved.</div>";
-                panDialogError.Visible = true;
-                panDisplay.Visible = false;
-            }
         }
 
-        private void daClient_RowUpdating(object sender, SqlRowUpdatingEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-                oldClientID = Convert.ToInt32(e.Row["ClientID"]);
-        }
-
-        private void daClient_RowUpdated(object sender, SqlRowUpdatedEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-            {
-                // update ClientOrg, exactly one row will match
-                DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0}", oldClientID));
-                codrs[0]["ClientID"] = e.Row["ClientID"];
-            }
-        }
-
-        private void daAddress_RowUpdating(object sender, SqlRowUpdatingEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-                oldAddressID = Convert.ToInt32(e.Row["AddressID"]);
-        }
-
-        private void daAddress_RowUpdated(object sender, SqlRowUpdatedEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-            {
-                // exactly one row will match
-                DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientAddressID = {0}", oldAddressID));
-                codrs[0]["ClientAddressID"] = e.Row["AddressID"];
-            }
-        }
-
-        private void daClientOrg_RowUpdating(object sender, SqlRowUpdatingEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-                oldClientOrgID = Convert.ToInt32(e.Row["ClientOrgID"]);
-        }
-
-        private void daClientOrg_RowUpdated(object sender, SqlRowUpdatedEventArgs e)
-        {
-            if (e.StatementType == StatementType.Insert)
-            {
-                string strSelect = string.Format("ClientOrgID = {0}", oldClientOrgID);
-
-                // update ClientManager, exactly one row may match
-                DataRow[] cmdrs = dsClient.Tables["ClientManager"].Select(strSelect);
-                for (int i = 0; i < cmdrs.Length; i++)
-                    cmdrs[i]["ClientOrgID"] = e.Row["ClientOrgID"];
-
-                // update ClientAccount, exactly one row may match
-                DataRow[] cadrs = dsClient.Tables["ClientAccount"].Select(strSelect);
-                if (cadrs.Length == 1)
-                    cadrs[0]["ClientOrgID"] = e.Row["ClientOrgID"];
-
-                //Save the billing type permanently in database, since we alreayd know the newly created ClientOrgID
-                BillingTypeDA.SetBillingTypeID(Convert.ToInt32(e.Row["ClientOrgID"]), Convert.ToInt32(rdolistBillingType.SelectedItem.Value));
-            }
-        }
-
-        protected void btnDiscard_Click(object sender, EventArgs e)
+        protected void DiscardButton_Click(object sender, EventArgs e)
         {
             Cache.Remove(DataUtility.CacheID); // remove anything left in cache
             Response.Redirect("~");
         }
 
         //This event will select the current billing type of this selected user
-        protected void rdolistBillingType_DataBound(object sender, EventArgs e)
+        protected void BillingTypeRadioButtonList_DataBound(object sender, EventArgs e)
         {
             //2007-04-09
             if (!string.IsNullOrEmpty(txtUsername.Text)) //Make sure it's in Edit mode
             {
                 //The radio button list's selected item must be set after data is bound
                 int BillingID = BillingTypeDA.GetBillingTypeID(selectedClientOrgId);
-                foreach (ListItem obj in rdolistBillingType.Items)
+                foreach (ListItem obj in BillingTypeRadioButtonList.Items)
                 {
                     if (Convert.ToInt32(obj.Value) == BillingID)
                         obj.Selected = true;
@@ -1875,7 +1863,7 @@ namespace sselData
             else
             {
                 //by default, we select the regular billing type
-                foreach (ListItem btn in rdolistBillingType.Items)
+                foreach (ListItem btn in BillingTypeRadioButtonList.Items)
                 {
                     if (btn.Text == "Regular")
                     {
@@ -1886,7 +1874,7 @@ namespace sselData
             }
         }
 
-        protected void btnUniqueIDSearch_Click(object sender, EventArgs e)
+        protected void UniqueIDSearchButton_Click(object sender, EventArgs e)
         {
             lblLDAPMsg.Text = string.Empty;
 
@@ -1923,7 +1911,7 @@ namespace sselData
             return result;
         }
 
-        protected void rptPhysicalAccess_ItemDataBound(object sender, RepeaterItemEventArgs e)
+        protected void PhysicalAccessRepeater_ItemDataBound(object sender, RepeaterItemEventArgs e)
         {
             if (e.Item.ItemType == ListItemType.Item || e.Item.ItemType == ListItemType.AlternatingItem)
             {

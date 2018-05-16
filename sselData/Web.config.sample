@@ -4,63 +4,71 @@
   http://go.microsoft.com/fwlink/?LinkId=169433
   -->
 <configuration>
-  <configSections>
-    <sectionGroup name="lnf">
-      <section name="providers" type="LNF.ProvidersSection, LNF" />
-      <section name="redis" type="LNF.Impl.Redis.RedisConfigurationSection, LNF.Impl" />
-    </sectionGroup>
-  </configSections>
+    <configSections>
+        <sectionGroup name="lnf">
+            <section name="provider" type="LNF.ServiceProviderSection, LNF" />
+        </sectionGroup>
+    </configSections>
 
-  <lnf>
-    <providers production="false">
-      <context type="LNF.Impl.WebContextProvider, LNF.Impl" loginUrl="/login" />
-      <dataAccess type="LNF.Impl.NHibernateWebDataAccess, LNF.Impl" />
-      <serialization type="LNF.Impl.Serialization.SerializationProvider, LNF.Impl" />
-      <physicalAccess type="LNF.Impl.PhysicalAccess.ProwatchPhysicalAccess, LNF.Impl" />
-      <encryption type="LNF.Impl.EncryptionProvider, LNF.Impl" />
-      <email type="LNF.Impl.Email.EmailProvider, LNF.Impl" host="127.0.0.1" />
-      <log type="LNF.Impl.Logging.ServiceLogProvider, LNF.Impl" name="sselData" enabled="true" />
-      <modelFactory type="LNF.Impl.ModelFactory.ValueInjecterModelFactory, LNF.Impl" />
-    </providers>
-    <redis>
-      <connection host="cachesvr" databaseId="5" />
-    </redis>
-  </lnf>
+    <lnf>
+        <provider production="false">
+            <context loginUrl="/login" />
+            <dataAccess showSql="true" />
+            <email host="xxxxx" log="true" />
+            <control host="xxxxx" />
+            <log name="sselData" enabled="true" />
+        </provider>
+    </lnf>
 
-  <appSettings>
-    <add key="ShowMenu" value="false" />
-    <add key="AddClientToAccount.PrivFilter" value="Lab User,Staff,Store User,Remote User" />
-    <add key="MongoConnectionString" value="mongodb://*****:*****@localhost/" />
-    <add key="ValidationSettings:UnobtrusiveValidationMode" value="None" />
-  </appSettings>
+    <appSettings>
+        <add key="ShowMenu" value="false" />
+        <add key="AddClientToAccount.PrivFilter" value="Lab User,Staff,Store User,Remote User" />
+        <add key="MongoConnectionString" value="xxxxx" />
+        <add key="ValidationSettings:UnobtrusiveValidationMode" value="None" />
+    </appSettings>
 
-  <connectionStrings>
-    <add name="cnSselData" providerName="System.Data.SqlClient" connectionString="Server=*****;Database=*****;User ID=*****;Password=*****" />
-    <add name="cnProwatch" providerName="System.Data.SqlClient" connectionString="Server=*****;Database=*****;User ID=*****;Password=*****" />
-  </connectionStrings>
+    <connectionStrings>
+        <add name="cnSselData" providerName="System.Data.SqlClient" connectionString="xxxxx" />
+        <add name="cnProwatch" providerName="System.Data.SqlClient" connectionString="xxxxx" />
+    </connectionStrings>
 
-  <system.web>
-    <compilation debug="true" targetFramework="4.6.1" />
-    <httpRuntime targetFramework="4.6.1" />
+    <system.web>
+        <compilation debug="true" targetFramework="4.7">
+            <assemblies>
+                <remove assembly="netfx.force.conflicts" />
+                <remove assembly="System.Data.Common" />
+                <remove assembly="System.Diagnostics.StackTrace" />
+                <remove assembly="System.Diagnostics.Tracing" />
+                <remove assembly="System.Globalization.Extensions" />
+                <remove assembly="System.Net.Sockets" />
+                <remove assembly="System.Runtime.Serialization.Primitives" />
+                <remove assembly="System.Security.Cryptography.Algorithms" />
+                <remove assembly="System.Security.SecureString" />
+                <remove assembly="System.Threading.Overlapped" />
+                <remove assembly="System.Xml.XPath.XDocument" />
+            </assemblies>
+        </compilation>
 
-    <pages controlRenderingCompatibilityVersion="4.0">
-      <controls>
-        <add assembly="LNF.Web" namespace="LNF.Web.Controls" tagPrefix="lnf" />
-      </controls>
-    </pages>
+        <httpRuntime targetFramework="4.7" />
 
-    <authentication mode="Forms">
-      <forms name="sselAuth.cookie" path="/" loginUrl="/login" timeout="480" protection="All" slidingExpiration="true" domain="umich.edu" cookieless="UseCookies" />
-    </authentication>
+        <pages controlRenderingCompatibilityVersion="4.0">
+            <controls>
+                <add assembly="LNF.Web" namespace="LNF.Web.Controls" tagPrefix="lnf" />
+            </controls>
+        </pages>
 
-    <authorization>
-      <deny users="?" />
-    </authorization>
+        <authentication mode="Forms">
+            <forms name="sselAuth.cookie" path="/" loginUrl="/login" timeout="480" protection="All" slidingExpiration="true" domain="umich.edu" cookieless="UseCookies" />
+        </authentication>
 
-    <machineKey compatibilityMode="Framework20SP2" validationKey="*****" decryptionKey="*****" validation="SHA1" decryption="3DES" />
+        <authorization>
+            <deny users="?" />
+        </authorization>
 
-    <xhtmlConformance mode="Legacy" />
+        <machineKey compatibilityMode="Framework20SP2" validationKey="*****" decryptionKey="*****" validation="SHA1" decryption="3DES" />
 
-    <customErrors mode="Off" />
-  </system.web>
+        <xhtmlConformance mode="Legacy" />
+
+        <customErrors mode="Off" />
+    </system.web>
 </configuration>
