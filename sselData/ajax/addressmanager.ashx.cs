@@ -1,5 +1,5 @@
-﻿using LNF;
-using LNF.Cache;
+﻿using LNF.Web;
+using Newtonsoft.Json;
 using sselData.Controls;
 using System;
 using System.Collections.Generic;
@@ -15,10 +15,13 @@ namespace sselData.Ajax
     /// </summary>
     public class AddressManager : IHttpHandler, IRequiresSessionState
     {
+        protected HttpContextBase ContextBase { get; private set; }
 
         public void ProcessRequest(HttpContext context)
         {
-            var json = string.Empty;
+            ContextBase = new HttpContextWrapper(context);
+
+            string json;
 
             try
             {
@@ -29,22 +32,22 @@ namespace sselData.Ajax
                 switch (command)
                 {
                     case "get-addresses":
-                        json = HandleGetAddresses(context);
+                        json = HandleGetAddresses();
                         break;
                     case "update-address":
-                        json = HandleUpdateAddress(context);
+                        json = HandleUpdateAddress();
                         break;
                     case "delete-address":
-                        json = HandleDeleteAddress(context);
+                        json = HandleDeleteAddress();
                         break;
                     case "add-address":
-                        json = HandleAddAddress(context);
+                        json = HandleAddAddress();
                         break;
                     case "get-default-addresses":
-                        json = HandleGetDefaultAddress(context);
+                        json = HandleGetDefaultAddress();
                         break;
                     case "table-dump":
-                        json = HandleTableDump(context);
+                        json = HandleTableDump();
                         break;
                     default:
                         throw new AjaxException(400, "Invalid command.");
@@ -53,20 +56,21 @@ namespace sselData.Ajax
             catch (AjaxException ajaxEx)
             {
                 context.Response.StatusCode = ajaxEx.StatusCode;
-                json = ServiceProvider.Current.Serialization.Json.SerializeObject(new { error = ajaxEx.Message });
+
+                json = JsonConvert.SerializeObject(new { error = ajaxEx.Message });
             }
             catch (Exception ex)
             {
                 context.Response.StatusCode = 500;
-                json = ServiceProvider.Current.Serialization.Json.SerializeObject(new { error = ex.Message });
+                json = JsonConvert.SerializeObject(new { error = ex.Message });
             }
 
             context.Response.Write(json);
         }
 
-        private string HandleTableDump(HttpContext context)
+        private string HandleTableDump()
         {
-            string name = context.Request.QueryString["name"];
+            string name = ContextBase.Request.QueryString["name"];
 
             if (string.IsNullOrEmpty(name))
                 throw new AjaxException(400, "Invalid name.");
@@ -83,17 +87,17 @@ namespace sselData.Ajax
 
             string result = string.Format(html, table);
 
-            context.Response.ContentType = "text/html";
+            ContextBase.Response.ContentType = "text/html";
 
             return result;
         }
 
-        private string HandleGetDefaultAddress(HttpContext context)
+        private string HandleGetDefaultAddress()
         {
-            var addressType = context.Request.QueryString["addressType"];
-            var orgId = Convert.ToInt32(context.Session["OrgID"]);
+            var addressType = ContextBase.Request.QueryString["addressType"];
+            var orgId = Convert.ToInt32(ContextBase.Session["OrgID"]);
             var addr = GetDefaultAddress(addressType, orgId);
-            return ServiceProvider.Current.Serialization.Json.SerializeObject(addr);
+            return JsonConvert.SerializeObject(addr);
         }
 
         private AddressItem GetDefaultAddress(string addressType, int orgId)
@@ -127,20 +131,20 @@ namespace sselData.Ajax
             return result;
         }
 
-        private string HandleAddAddress(HttpContext context)
+        private string HandleAddAddress()
         {
-            if (context.Request.HttpMethod != "POST")
+            if (ContextBase.Request.HttpMethod != "POST")
                 throw new AjaxException(405, "This command must use POST.");
 
-            var type = GetContextType(context);
+            var type = GetContextType();
 
             switch (type)
             {
                 case "account":
-                    var accountId = GetContextId(context);
-                    var item = GetContextAddressItem(context);
+                    var accountId = GetContextId();
+                    var item = GetContextAddressItem();
                     AddAccountAddress(accountId, item);
-                    return HandleGetAddresses(context);
+                    return HandleGetAddresses();
                 default:
                     throw new NotImplementedException();
             }
@@ -168,22 +172,22 @@ namespace sselData.Ajax
                 DataRow acct = dsAccount.Tables["Account"].Rows.Find(accountId);
                 acct.SetField(item.AddressType, addressId);
 
-                CacheManager.Current.CacheData(dsAccount);
+                ContextBase.SetCacheData(dsAccount);
             }
         }
 
-        private string HandleDeleteAddress(HttpContext context)
+        private string HandleDeleteAddress()
         {
-            var type = GetContextType(context);
+            var type = GetContextType();
 
-            if (int.TryParse(context.Request.QueryString["addressId"], out int addressId))
+            if (int.TryParse(ContextBase.Request.QueryString["addressId"], out int addressId))
             {
                 switch (type)
                 {
                     case "account":
-                        var accountId = GetContextId(context);
+                        var accountId = GetContextId();
                         DeleteAccountAddress(accountId, addressId);
-                        return HandleGetAddresses(context);
+                        return HandleGetAddresses();
                     default:
                         throw new NotImplementedException();
                 }
@@ -209,20 +213,20 @@ namespace sselData.Ajax
             }
         }
 
-        private string HandleUpdateAddress(HttpContext context)
+        private string HandleUpdateAddress()
         {
-            if (context.Request.HttpMethod != "POST")
+            if (ContextBase.Request.HttpMethod != "POST")
                 throw new AjaxException(405, "This command must use POST.");
 
-            var type = GetContextType(context);
+            var type = GetContextType();
 
             switch (type)
             {
                 case "account":
-                    var accountId = GetContextId(context);
-                    var item = GetContextAddressItem(context);
+                    var accountId = GetContextId();
+                    var item = GetContextAddressItem();
                     UpdateAccountAddress(accountId, item);
-                    return HandleGetAddresses(context);
+                    return HandleGetAddresses();
                 default:
                     throw new NotImplementedException();
             }
@@ -254,21 +258,21 @@ namespace sselData.Ajax
             var acct = dsAccount.Tables["Account"].Rows.Find(accountId);
             acct[item.AddressType] = addr["AddressID"];
 
-            CacheManager.Current.CacheData(dsAccount);
+            ContextBase.SetCacheData(dsAccount);
         }
 
-        private string HandleGetAddresses(HttpContext context)
+        private string HandleGetAddresses()
         {
-            var type = GetContextType(context);
+            var type = GetContextType();
 
             IEnumerable<AddressItem> items;
 
             switch (type)
             {
                 case "account":
-                    var accountId = GetContextId(context);
+                    var accountId = GetContextId();
                     items = GetAddresses(accountId);
-                    return ServiceProvider.Current.Serialization.Json.SerializeObject(items);
+                    return JsonConvert.SerializeObject(items);
                 default:
                     throw new NotImplementedException();
             }
@@ -357,7 +361,7 @@ namespace sselData.Ajax
             }
         }
 
-        private string GetAddressTypeText(string value)
+        public string GetAddressTypeText(string value)
         {
             switch (value)
             {
@@ -372,41 +376,41 @@ namespace sselData.Ajax
 
         private DataSet GetDataSet()
         {
-            var ds = CacheManager.Current.CacheData();
+            var ds = ContextBase.GetCacheData();
             if (ds == null)
                 throw new AjaxException(400, "No data found in cache.");
             return ds;
         }
 
-        private int GetContextId(HttpContext context)
+        private int GetContextId()
         {
-            if (int.TryParse(context.Request.QueryString["id"], out int accountId))
+            if (int.TryParse(ContextBase.Request.QueryString["id"], out int accountId))
                 return accountId;
             else
                 throw new AjaxException(400, "Invalid id.");
         }
 
-        private string GetContextType(HttpContext context)
+        private string GetContextType()
         {
-            var type = context.Request.QueryString["type"];
+            var type = ContextBase.Request.QueryString["type"];
             return type;
         }
 
-        private AddressItem GetContextAddressItem(HttpContext context)
+        private AddressItem GetContextAddressItem()
         {
-            if (int.TryParse(context.Request.Form["addressId"], out int addressId))
+            if (int.TryParse(ContextBase.Request.Form["addressId"], out int addressId))
             {
                 var item = new AddressItem()
                 {
                     AddressID = addressId,
-                    AddressType = context.Request.Form["addressType"],
-                    Attention = context.Request.Form["attention"],
-                    AddressLine1 = context.Request.Form["addressLine1"],
-                    AddressLine2 = context.Request.Form["addressLine2"],
-                    City = context.Request.Form["city"],
-                    State = context.Request.Form["state"],
-                    Zip = context.Request.Form["zip"],
-                    Country = context.Request.Form["country"]
+                    AddressType = ContextBase.Request.Form["addressType"],
+                    Attention = ContextBase.Request.Form["attention"],
+                    AddressLine1 = ContextBase.Request.Form["addressLine1"],
+                    AddressLine2 = ContextBase.Request.Form["addressLine2"],
+                    City = ContextBase.Request.Form["city"],
+                    State = ContextBase.Request.Form["state"],
+                    Zip = ContextBase.Request.Form["zip"],
+                    Country = ContextBase.Request.Form["country"]
                 };
 
                 return item;
@@ -417,15 +421,12 @@ namespace sselData.Ajax
             }
         }
 
-        public bool IsReusable
-        {
-            get { return false; }
-        }
+        public bool IsReusable => false;
     }
 
     public class AjaxException : Exception
     {
-        private string _message;
+        private readonly string _message;
 
         public int StatusCode { get; }
         public override string Message => _message;

@@ -1,4 +1,3 @@
-using LNF.CommonTools;
 using LNF.Repository;
 using System;
 using System.Collections.Generic;
@@ -10,21 +9,22 @@ namespace sselData.AppCode.DAL
     {
         public static DataTable GetAllUserGroups()
         {
-            using (var dba = DA.Current.GetAdapter())
-                return dba.ApplyParameters(new { Action = "All" }).FillDataTable("UserGroup_Select");
+            return DataCommand.Create()
+                .Param("Action", "All")
+                .FillDataTable("UserGroup_Select");
         }
 
         [Obsolete("No longer used?")]
         public static List<int> GetUserGroupIDs()
         {
-            using (var dba = DA.Current.GetAdapter())
+            List<int> result = new List<int>();
+            var cmd = DataCommand.Create().Param("Action", "All");
+            using (var reader = cmd.ExecuteReader("ClientOrgUserGroupTS"))
             {
-                List<int> result = new List<int>();
-                IDataReader reader = dba.ApplyParameters(new { Action = "All" }).ExecuteReader("ClientOrgUserGroupTS");
                 while (reader.Read())
                     result.Add(reader.Value("UserGroupID", 0));
-                return result;
             }
+            return result;
         }
     }
 }

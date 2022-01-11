@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
     <title>LNF Data Entry</title>
-    <link rel="stylesheet" href="/static/styles/theme/default.css" />
+    <link rel="stylesheet" href="//ssel-apps.eecs.umich.edu/static/styles/theme/default.css" />
     <link rel="stylesheet" href="styles/address-manager.css?v=20180124940" />
     <asp:ContentPlaceHolder ID="head" runat="server">
     </asp:ContentPlaceHolder>
@@ -17,7 +17,7 @@
             </asp:ContentPlaceHolder>
         </div>
     </form>
-    <script src="/static/lib/jquery/jquery.min.js"></script>
+    <script src="//ssel-apps.eecs.umich.edu/static/lib/jquery/jquery.min.js"></script>
     <script src="scripts/sseldatautils.js"></script>
     <asp:ContentPlaceHolder runat="server" ID="scripts">
     </asp:ContentPlaceHolder>

@@ -1,4 +1,5 @@
-﻿using LNF.Models.Data;
+﻿using LNF.Data;
+using LNF.Web.Content;
 using sselData.AppCode;
 using System;
 using System.Configuration;
@@ -8,7 +9,7 @@ using System.Web.UI.WebControls;
 
 namespace sselData
 {
-    public partial class ChargeType : LNF.Web.Content.LNFPage
+    public partial class ChargeType : OnlineServicesPage
     {
         DataSet dsChargeType;
 
@@ -155,16 +156,21 @@ namespace sselData
         {
             SqlConnection cnSselData = new SqlConnection(ConfigurationManager.ConnectionStrings["cnSselData"].ConnectionString);
 
-            SqlDataAdapter daChargeType = new SqlDataAdapter();
+            SqlDataAdapter daChargeType = new SqlDataAdapter
+            {
+                InsertCommand = new SqlCommand("ChargeType_Insert", cnSselData)
+            };
 
-            daChargeType.InsertCommand = new SqlCommand("ChargeType_Insert", cnSselData);
             daChargeType.InsertCommand.CommandType = CommandType.StoredProcedure;
             daChargeType.InsertCommand.Parameters.Add("@ChargeTypeID", SqlDbType.Int, 4, "ChargeTypeID");
             daChargeType.InsertCommand.Parameters.Add("@ChargeType", SqlDbType.NVarChar, 50, "ChargeType");
             daChargeType.InsertCommand.Parameters.Add("@AccountID", SqlDbType.Int, 50, "AccountID");
 
-            daChargeType.UpdateCommand = new SqlCommand("ChargeType_Update", cnSselData);
-            daChargeType.UpdateCommand.CommandType = CommandType.StoredProcedure;
+            daChargeType.UpdateCommand = new SqlCommand("ChargeType_Update", cnSselData)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
             daChargeType.UpdateCommand.Parameters.Add("@ChargeTypeID", SqlDbType.Int, 4, "ChargeTypeID");
             daChargeType.UpdateCommand.Parameters.Add("@ChargeType", SqlDbType.NVarChar, 50, "ChargeType");
             daChargeType.UpdateCommand.Parameters.Add("@AccountID", SqlDbType.Int, 50, "AccountID");

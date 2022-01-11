@@ -1,21 +1,14 @@
 ﻿using LNF;
 using LNF.Data;
 using LNF.Web.Content;
-using StructureMap.Attributes;
 
 namespace sselData.AppCode
 {
-    public class DataPage : LNFPage
+    public class DataPage : OnlineServicesPage
     {
-        [SetterProperty]
-        public IAccountManager AccountManager { get; set; }
+        [Inject] public IAccountRepository AccountRepository { get; set; }
 
-        [SetterProperty]
-        public IDryBoxManager DryBoxManager { get; set; }
 
-        public DataPage()
-        {
-            ServiceProvider.Current.Resolver.BuildUp(this);
-        }
+        [Inject] public IDryBoxRepository DryBoxRepository { get; set; }
     }
 }

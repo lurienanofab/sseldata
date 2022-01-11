@@ -1,5 +1,4 @@
 ﻿using LNF.Data;
-using LNF.Models.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using sselData.AppCode;
 using System;
@@ -16,8 +15,6 @@ namespace sselData.Tests
             DataSet dsClient = DataUtility.GetClientDataSet(17);
             int clientId = 0;
             int selectedClientOrgId = 0;
-            string alertMsg;
-            bool enableAccessError;
 
             DataUtility.StoreClientInfo(
                 dtClient: dsClient.Tables["Client"],
@@ -50,8 +47,8 @@ namespace sselData.Tests
                 newFacultyStartDate: DateTime.Now,
                 clientId: ref clientId,
                 clientOrgId: ref selectedClientOrgId,
-                alertMsg: out alertMsg,
-                enableAccessError: out enableAccessError);
+                alertMsg: out string alertMsg,
+                enableAccessError: out bool enableAccessError);
         }
     }
 }

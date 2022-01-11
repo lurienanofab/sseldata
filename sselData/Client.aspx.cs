@@ -1,6 +1,6 @@
 ﻿using LNF;
-using LNF.CommonTools;
-using LNF.Models.Data;
+using LNF.Data;
+using LNF.DataAccess;
 using LNF.PhysicalAccess;
 using LNF.Repository;
 using LNF.Web;
@@ -15,7 +15,7 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using Data = LNF.Repository.Data;
+using Data = LNF.Impl.Repository.Data;
 
 namespace sselData
 {
@@ -32,7 +32,7 @@ namespace sselData
         private int selectedClientOrgId; //holds the ClientOrgID that the current user is trying to modify
         private int oldClientID;
         private int oldAddressID;
-        private int oldClientOrgID;
+        //private int oldClientOrgID;
 
         public override ClientPrivilege AuthTypes
         {
@@ -50,13 +50,14 @@ namespace sselData
                 return Convert.ToInt32(Session["OrgID"]);
         }
 
-        private void FillDemographicsRadioButtonList(SQLDBAccess dba, RadioButtonList rbl, string demType)
+        private void FillDemographicsRadioButtonList(IDataCommand cmd, RadioButtonList rbl, string demType)
         {
             string textField = demType;
             string valueField = string.Format("{0}ID", demType);
 
-            dba.SelectCommand.SetParameterValue("@DemType", demType);
-            using (var reader = dba.ExecuteReader("Dem_Select"))
+            cmd.Param("DemType", demType);
+
+            using (var reader = cmd.ExecuteReader("sselData.dbo.Dem_Select"))
             {
                 rbl.DataSource = reader;
                 rbl.DataTextField = textField;
@@ -80,7 +81,7 @@ namespace sselData
 
             if (Page.IsPostBack)
             {
-                dsClient = (DataSet)Cache.Get(DataUtility.CacheID);
+                dsClient = ContextBase.GetCacheData();
                 if (dsClient == null)
                     Response.Redirect("~");
                 else if (dsClient.DataSetName != "Client")
@@ -88,7 +89,7 @@ namespace sselData
             }
             else
             {
-                Cache.Remove(DataUtility.CacheID); // remove anything left in cache
+                ContextBase.RemoveCacheData(); // remove anything left in cache
 
                 int orgId = GetSessionOrgID();
 
@@ -105,66 +106,63 @@ namespace sselData
                 OrgDropDownList.ClearSelection();
 
                 // populate the Privs radio list
-                cblPriv.Items.LoadPrivs();
+                cblPriv.Items.LoadPrivs(Provider);
 
-                using (var dba = new SQLDBAccess("cnSselData"))
+                var cmd = DataCommand();
+
+                // fill in ddl for department
+                using (var reader = cmd.Param(new { Action = "ByOrg", OrgID = orgId }).ExecuteReader("Department_Select"))
                 {
-                    // fill in ddl for department
-                    using (var reader = dba.ApplyParameters(new { Action = "ByOrg", OrgID = orgId }).ExecuteReader("Department_Select"))
-                    {
-                        ddlDepartment.DataSource = reader;
-                        ddlDepartment.DataTextField = "Department";
-                        ddlDepartment.DataValueField = "DepartmentID";
-                        ddlDepartment.DataBind();
-                        reader.Close();
-                    }
-
-                    // fill in ddl for role
-                    using (var reader = dba.ApplyParameters(new { TableName = "Role" }).ExecuteReader("Global_Select"))
-                    {
-                        ddlRole.DataSource = reader;
-                        ddlRole.DataTextField = "Role";
-                        ddlRole.DataValueField = "RoleID";
-                        ddlRole.DataBind();
-                        reader.Close();
-                    }
-
-                    // fill in ddl for usertype
-                    using (var reader = dba.ApplyParameters(new { TableName = "Community" }).ExecuteReader("Global_Select"))
-                    {
-                        cblCommunities.DataSource = reader;
-                        cblCommunities.DataTextField = "Community";
-                        cblCommunities.DataValueField = "CommunityFlag";
-                        cblCommunities.DataBind();
-                        reader.Close();
-                    }
-
-                    // fill in ddl for technical interest
-                    using (var reader = dba.ApplyParameters(new { TableName = "TechnicalField" }).ExecuteReader("Global_Select"))
-                    {
-                        ddlTechnicalInterest.DataSource = reader;
-                        ddlTechnicalInterest.DataTextField = "TechnicalField";
-                        ddlTechnicalInterest.DataValueField = "TechnicalFieldID";
-                        ddlTechnicalInterest.DataBind();
-                        reader.Close();
-                    }
-
-                    // fill in demographics RBL 
-                    dba.SelectCommand.ClearParameters();
-                    dba.SelectCommand.AddParameter("@Action", "All");
-                    dba.SelectCommand.AddParameter("@DemType", DbType.String, 30);
-
-                    FillDemographicsRadioButtonList(dba, rblCitizen, "DemCitizen");
-                    FillDemographicsRadioButtonList(dba, rblEthnic, "DemEthnic");
-                    FillDemographicsRadioButtonList(dba, rblRace, "DemRace");
-                    FillDemographicsRadioButtonList(dba, rblGender, "DemGender");
-                    FillDemographicsRadioButtonList(dba, rblDisability, "DemDisability");
+                    ddlDepartment.DataSource = reader;
+                    ddlDepartment.DataTextField = "Department";
+                    ddlDepartment.DataValueField = "DepartmentID";
+                    ddlDepartment.DataBind();
+                    reader.Close();
                 }
+
+                // fill in ddl for role
+                using (var reader = cmd.Param(new { TableName = "Role" }).ExecuteReader("Global_Select"))
+                {
+                    ddlRole.DataSource = reader;
+                    ddlRole.DataTextField = "Role";
+                    ddlRole.DataValueField = "RoleID";
+                    ddlRole.DataBind();
+                    reader.Close();
+                }
+
+                // fill in ddl for usertype
+                using (var reader = cmd.Param(new { TableName = "Community" }).ExecuteReader("Global_Select"))
+                {
+                    cblCommunities.DataSource = reader;
+                    cblCommunities.DataTextField = "Community";
+                    cblCommunities.DataValueField = "CommunityFlag";
+                    cblCommunities.DataBind();
+                    reader.Close();
+                }
+
+                // fill in ddl for technical interest
+                using (var reader = cmd.Param(new { TableName = "TechnicalField" }).ExecuteReader("Global_Select"))
+                {
+                    ddlTechnicalInterest.DataSource = reader;
+                    ddlTechnicalInterest.DataTextField = "TechnicalField";
+                    ddlTechnicalInterest.DataValueField = "TechnicalFieldID";
+                    ddlTechnicalInterest.DataBind();
+                    reader.Close();
+                }
+
+                // fill in demographics RBL 
+                cmd.Param(new { Action = "All" });
+
+                FillDemographicsRadioButtonList(cmd, rblCitizen, "DemCitizen");
+                FillDemographicsRadioButtonList(cmd, rblEthnic, "DemEthnic");
+                FillDemographicsRadioButtonList(cmd, rblRace, "DemRace");
+                FillDemographicsRadioButtonList(cmd, rblGender, "DemGender");
+                FillDemographicsRadioButtonList(cmd, rblDisability, "DemDisability");
 
                 //Declare default sort parameter and sort direction
                 ViewState["dgClientSortDir"] = " ASC";
 
-                Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                ContextBase.SetCacheData(dsClient);
                 SetPageControlsAndBind(false, false, false, false, true);
             }
         }
@@ -351,9 +349,7 @@ namespace sselData
 
             if (clientId > 0)
             {
-                Data.Client c = DA.Current.Single<Data.Client>(clientId);
-
-                var badges = ServiceProvider.Current.PhysicalAccess.GetBadge(c);
+                var badges = ServiceProvider.Current.PhysicalAccess.GetBadge(clientId);
 
                 if (badges.Count() > 0)
                 {
@@ -461,7 +457,7 @@ namespace sselData
                         }
                     }
 
-                    Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                    ContextBase.SetCacheData(dsClient);
                     SetPageControlsAndBind(true, false, true, false, false);
                     break;
                 case "Edit":
@@ -503,7 +499,7 @@ namespace sselData
                     ClientSaveButton.CommandArgument = clientId.ToString();
                     ClientSaveButton.Text = "Store modified data";
 
-                    Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                    ContextBase.SetCacheData(dsClient);
                     SetPageControlsAndBind(true, false, true, false, false);
 
                     //need to bind again to evoke the data bound event of rdolistBillingType so correct billingtype can be set
@@ -536,7 +532,6 @@ namespace sselData
                     }
 
                     int clientOrgId = codrs[0].Field<int>("ClientOrgID");
-                    string userName = string.Empty;
                     DataRow[] cmdrs = dsClient.Tables["ClientManager"].Select(string.Format("ManagerOrgID = {0} AND Active = 1", clientOrgId));
                     for (int i = 0; i < cmdrs.Length; i++)
                     {
@@ -555,7 +550,7 @@ namespace sselData
                         cdr = dsClient.Tables["Client"].Rows.Find(codr.Field<int>("ClientID"));
 
                         //2008-01-15 The code below is to handle user name that has apostrophe
-                        userName = cdr.Field<string>("DisplayName");
+                        string userName = cdr.Field<string>("DisplayName");
                         if (userName.Contains("'"))
                             userName = userName.Replace("'", " ");
                         cannotDelete += userName;
@@ -648,15 +643,15 @@ namespace sselData
                         }
 
                         SetPageControlsAndBind(false, false, false, false, true);
-                        Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                        ContextBase.SetCacheData(dsClient);
                     }
                     break;
             }
         }
 
-        private bool CanDeleteClientManager(int ClientOrgID)
+        private bool CanDeleteClientManager(int clientOrgId)
         {
-            var co = DA.Current.Single<Data.ClientOrg>(ClientOrgID);
+            var co = DataSession.Single<Data.ClientOrg>(clientOrgId);
 
             if (!co.Client.Active)
                 return true;
@@ -717,14 +712,14 @@ namespace sselData
 
                 if (codrs.Length > 0)
                 {
-                    int ClientOrgID = Convert.ToInt32(codrs[0]["ClientOrgID"]);
-                    if (ClientOrgID > 0) //If the ClientOrg was just added, and changes haven't been saved yet, then ClientOrgID = -1
+                    int clientOrgId = Convert.ToInt32(codrs[0]["ClientOrgID"]);
+                    if (clientOrgId > 0) //If the ClientOrg was just added, and changes haven't been saved yet, then ClientOrgID = -1
                     {
-                        var co = DA.Current.Single<Data.ClientOrg>(ClientOrgID);
+                        var co = DataSession.Single<Data.ClientOrg>(clientOrgId);
                         if (co != null) //Just in case...
                         {
-                            if (DryBoxManager.HasDryBox(co))
-                                lit.Text = string.Format(@"<img src=""images/im_drybox.gif"" title=""DryBox reserved with account: {0}"" />", DryBoxManager.GetDryBoxClientAccount(co).Account.Name);
+                            if (DryBoxRepository.ClientOrgHasDryBox(co.ClientOrgID))
+                                lit.Text = string.Format(@"<img src=""images/im_drybox.gif"" title=""DryBox reserved with account: {0}"" />", DryBoxRepository.GetDryBoxClientAccount(co.ClientOrgID).AccountName);
                         }
                     }
                 }
@@ -1148,8 +1143,8 @@ namespace sselData
 
             panLDAPLookup.Visible = false;
 
-            using (SQLDBAccess dba = new SQLDBAccess("cnSselData"))
-                DataUtility.GetClientManagerData(dba, dsClient, sessionOrgId);
+            var cmd = DataCommand();
+            DataUtility.GetClientManagerData(cmd, dsClient, sessionOrgId);
 
             // remove any addresses that were added
             DataRow[] sdrs = dsClient.Tables["Address"].Select("AddDelete = 1");
@@ -1170,7 +1165,7 @@ namespace sselData
                 }
             }
 
-            Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+            ContextBase.SetCacheData(dsClient);
             SetPageControlsAndBind(false, false, false, false, false);
         }
 
@@ -1211,7 +1206,7 @@ namespace sselData
                         sdr["AddDelete"] = true;
                         dsClient.Tables["Address"].Rows.Add(sdr);
 
-                        Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                        ContextBase.SetCacheData(dsClient);
                         SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     }
                     break;
@@ -1244,7 +1239,7 @@ namespace sselData
                         sdr["Zip"] = ((TextBox)e.Item.FindControl("txtZip")).Text;
                         sdr["Country"] = ((TextBox)e.Item.FindControl("txtCountry")).Text;
 
-                        Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                        ContextBase.SetCacheData(dsClient);
                         AddressDataGrid.EditItemIndex = -1;
                         SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     }
@@ -1266,7 +1261,7 @@ namespace sselData
                             sdr.Delete();
                     }
 
-                    Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                    ContextBase.SetCacheData(dsClient);
                     SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     break;
             }
@@ -1316,7 +1311,6 @@ namespace sselData
             string strAlert = string.Empty;
             for (int i = 0; i < strVal.Length; i++)
             {
-                bError = false;
                 if (strVal[i].FormField.ID.ToString().StartsWith("txt"))
                     bError = ((TextBox)strVal[i].FormField).Text.Trim().Length == 0;
                 else // must be rbl
@@ -1375,7 +1369,7 @@ namespace sselData
                             dsClient.Tables["ClientManager"].Rows.Add(cmdr);
                         }
 
-                        Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                        ContextBase.SetCacheData(dsClient);
                         SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     }
                     break;
@@ -1406,7 +1400,7 @@ namespace sselData
                     else
                         DataUtility.SetActiveFalse(cmdrs[0]);
 
-                    Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+                    ContextBase.SetCacheData(dsClient);
                     SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     break;
             }
@@ -1551,7 +1545,7 @@ namespace sselData
         {
             int sessionOrgId = GetSessionOrgID();
             int clientId = Convert.ToInt32(ClientSaveButton.CommandArgument);
-            DataRow cdr = dsClient.Tables["Client"].Rows.Find(clientId);
+            //DataRow cdr = dsClient.Tables["Client"].Rows.Find(clientId);
             DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", clientId, sessionOrgId));
 
             int ClientOrgID;
@@ -1598,7 +1592,7 @@ namespace sselData
                 }
             }
 
-            Cache.Insert(DataUtility.CacheID, dsClient, null, DateTime.MaxValue, TimeSpan.FromMinutes(20));
+            ContextBase.SetCacheData(dsClient);
         }
 
         protected void SaveButton_Click(object sender, EventArgs e)
@@ -1734,11 +1728,11 @@ namespace sselData
 
             // update the ClientOrg table
             SqlDataAdapter daClientOrg = new SqlDataAdapter();
-            daClientOrg.RowUpdating += (sender, e) =>
-            {
-                if (e.StatementType == StatementType.Insert)
-                    oldClientOrgID = Convert.ToInt32(e.Row["ClientOrgID"]);
-            };
+            //daClientOrg.RowUpdating += (sender, e) =>
+            //{
+            //    if (e.StatementType == StatementType.Insert)
+            //        oldClientOrgID = Convert.ToInt32(e.Row["ClientOrgID"]);
+            //};
 
             daClientOrg.RowUpdated += (sender, e) =>
             {
@@ -1842,7 +1836,7 @@ namespace sselData
 
         protected void DiscardButton_Click(object sender, EventArgs e)
         {
-            Cache.Remove(DataUtility.CacheID); // remove anything left in cache
+            ContextBase.RemoveCacheData(); // remove anything left in cache
             Response.Redirect("~");
         }
 
@@ -1900,28 +1894,28 @@ namespace sselData
                 lblLDAPMsg.Text = "You can fill in the form using a U of M Unique ID.<br />Please enter a valid Unique ID and click the Search button.";
         }
 
-        private List<T> ConvertCheckBoxListToDataItemList<T>(CheckBoxList cbl) where T : IDataItem
-        {
-            List<T> result = new List<T>();
-            foreach (ListItem i in cbl.Items)
-            {
-                if (i.Selected)
-                    result.Add(DA.Current.Single<T>(i.Value));
-            }
-            return result;
-        }
+        //private List<T> ConvertCheckBoxListToDataItemList<T>(CheckBoxList cbl) where T : IDataItem
+        //{
+        //    List<T> result = new List<T>();
+        //    foreach (ListItem i in cbl.Items)
+        //    {
+        //        if (i.Selected)
+        //            result.Add(DataSession.Single<T>(i.Value));
+        //    }
+        //    return result;
+        //}
 
         protected void PhysicalAccessRepeater_ItemDataBound(object sender, RepeaterItemEventArgs e)
         {
             if (e.Item.ItemType == ListItemType.Item || e.Item.ItemType == ListItemType.AlternatingItem)
             {
                 var badge = (Badge)e.Item.DataItem;
-                var cards = badge.GetCards();
+                var cards = Provider.PhysicalAccess.GetCards(badge.ClientID);
 
                 if (cards.Count() > 0)
                 {
                     Repeater rptCards = (Repeater)e.Item.FindControl("rptCards");
-                    rptCards.DataSource = badge.GetCards();
+                    rptCards.DataSource = cards;
                     rptCards.DataBind();
                 }
                 else

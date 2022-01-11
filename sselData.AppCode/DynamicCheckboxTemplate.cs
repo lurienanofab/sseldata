@@ -1,9 +1,7 @@
-﻿using System;
-using System.Web;
+﻿using LNF.CommonTools;
+using System;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Collections.Generic;
-using LNF.CommonTools;
 
 namespace sselData.AppCode
 {
@@ -20,9 +18,12 @@ namespace sselData.AppCode
 
         public void InstantiateIn(Control container)
         {
-            CheckBox chk = new CheckBox();
-            chk.ID = _ID;
-            chk.AutoPostBack = true;
+            CheckBox chk = new CheckBox
+            {
+                ID = _ID,
+                AutoPostBack = true
+            };
+
             chk.CheckedChanged += _Provider.DynamicCheckBox_CheckChanged;
             chk.DataBinding += BindCheckBox;
             container.Controls.Add(chk);
@@ -33,7 +34,7 @@ namespace sselData.AppCode
             CheckBox myCheckBox = (CheckBox)sender;
             DataGridItem container = (DataGridItem)myCheckBox.NamingContainer;
             DataItemHelper helper = new DataItemHelper(container.DataItem);
-            myCheckBox.Checked = helper.Value(_ID, false);
+            myCheckBox.Checked = helper[_ID].AsBoolean;
         }
     }
 }

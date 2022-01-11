@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Configuration;
+using LNF.Web.Content;
 
 namespace sselData
 {
-    public partial class data : LNF.Web.Content.LNFMasterPage
+    public partial class data : OnlineServicesMasterPage
     {
         public override bool ShowMenu
         {

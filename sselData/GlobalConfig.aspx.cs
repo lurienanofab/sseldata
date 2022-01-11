@@ -1,4 +1,4 @@
-﻿using LNF.Models.Data;
+﻿using LNF.Data;
 using LNF.Web.Content;
 using sselData.AppCode;
 using System;
@@ -9,7 +9,7 @@ using System.Web.UI.WebControls;
 
 namespace sselData
 {
-    public partial class GlobalConfig : LNFPage
+    public partial class GlobalConfig : OnlineServicesPage
     {
         DataSet dsGlobal;
         string strGlobalItem;

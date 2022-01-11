@@ -1,13 +1,9 @@
-﻿using LNF.Cache;
-using LNF.Models.Data;
-using LNF.Repository;
+﻿using LNF.Data;
 using LNF.Web;
 using LNF.Web.Content;
 using sselData.AppCode;
 using sselData.Controls;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
@@ -15,11 +11,11 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using repo = LNF.Repository.Data;
+using repo = LNF.Impl.Repository.Data;
 
 namespace sselData
 {
-    public partial class Account : LNFPage
+    public partial class Account : OnlineServicesPage
     {
         public override ClientPrivilege AuthTypes
         {
@@ -62,7 +58,7 @@ namespace sselData
 
             if (Page.IsPostBack)
             {
-                dsAccount = CacheManager.Current.CacheData();
+                dsAccount = ContextBase.GetCacheData();
 
                 if (dsAccount == null)
                     Response.Redirect("~");
@@ -71,7 +67,7 @@ namespace sselData
             }
             else
             {
-                CacheManager.Current.RemoveCacheData(); // remove anything left in cache
+                ContextBase.RemoveCacheData(); // remove anything left in cache
 
                 AccountID = 0;
 
@@ -224,7 +220,7 @@ namespace sselData
                     ViewState["dgAccountSortCol"] = "Name";
                     ViewState["dgAccountSortDir"] = " ASC";
 
-                    CacheManager.Current.CacheData(dsAccount);
+                    ContextBase.SetCacheData(dsAccount);
 
                     SetPageControlsAndBind(false, false, false);
 
@@ -417,7 +413,7 @@ namespace sselData
                         AccountID = newAccountRow.Field<int>("AccountID");
                         AccountStoreButton.Text = "Store New Account";
 
-                        CacheManager.Current.CacheData(dsAccount);
+                        ContextBase.SetCacheData(dsAccount);
                     }
 
                     SetPageControlsAndBind(true, false, false);
@@ -464,7 +460,7 @@ namespace sselData
                     AccountID = accountId;
                     AccountStoreButton.Text = "Store Modified Data";
 
-                    CacheManager.Current.CacheData(dsAccount);
+                    ContextBase.SetCacheData(dsAccount);
 
                     SetPageControlsAndBind(true, false, false);
                     break;
@@ -524,7 +520,7 @@ namespace sselData
                     else
                         DataUtility.SetActiveFalse(dr);
 
-                    CacheManager.Current.CacheData(dsAccount);
+                    ContextBase.SetCacheData(dsAccount);
 
                     SetPageControlsAndBind(false, false, false);
                     break;
@@ -695,7 +691,7 @@ namespace sselData
                 }
             }
 
-            CacheManager.Current.CacheData(dsAccount);
+            ContextBase.SetCacheData(dsAccount);
 
             SetPageControlsAndBind(false, false, false);
         }
@@ -863,7 +859,7 @@ namespace sselData
                 if (isNewEntry)
                     dsAccount.Tables["Account"].Rows.Add(accountRow);
 
-                CacheManager.Current.CacheData(dsAccount);
+                ContextBase.SetCacheData(dsAccount);
 
                 SetPageControlsAndBind(false, false, false);
             }
@@ -889,7 +885,7 @@ namespace sselData
 
                 accountRow.RejectChanges();
 
-                CacheManager.Current.CacheData(dsAccount);
+                ContextBase.SetCacheData(dsAccount);
             }
 
             AccountID = 0;
@@ -926,7 +922,7 @@ namespace sselData
                         if (isNewEntry)
                             dsAccount.Tables["ClientAccount"].Rows.Add(dr);
 
-                        CacheManager.Current.CacheData(dsAccount);
+                        ContextBase.SetCacheData(dsAccount);
 
                         SetPageControlsAndBind(true, false, false);
                     }
@@ -965,7 +961,7 @@ namespace sselData
                         }
                     }
 
-                    CacheManager.Current.CacheData(dsAccount);
+                    ContextBase.SetCacheData(dsAccount);
 
                     SetPageControlsAndBind(true, false, false);
                     break;
@@ -1204,7 +1200,7 @@ namespace sselData
         protected void DiscardButton_Click(object sender, EventArgs e)
         {
             AccountID = 0;
-            CacheManager.Current.RemoveCacheData(); // remove anything left in cache
+            ContextBase.RemoveCacheData(); // remove anything left in cache
             Response.Redirect("~");
         }
 
@@ -1213,7 +1209,7 @@ namespace sselData
             try
             {
                 int orgId = Convert.ToInt32(Session["OrgID"]);
-                var org = DA.Current.Single<repo.Org>(orgId);
+                var org = DataSession.Single<repo.Org>(orgId);
                 return org.IsInternal();
             }
             catch
@@ -1241,7 +1237,7 @@ namespace sselData
                 acct[e.Item.AddressType] = e.Item.AddressID;
             }
 
-            CacheManager.Current.CacheData(dsAccount);
+            ContextBase.SetCacheData(dsAccount);
 
             SetPageControlsAndBind(true, false, false);
         }
@@ -1267,7 +1263,7 @@ namespace sselData
                 dr[e.NewItem.AddressType] = ndr["AddressID"];
             }
 
-            CacheManager.Current.CacheData(dsAccount);
+            ContextBase.SetCacheData(dsAccount);
 
             SetPageControlsAndBind(true, false, false);
         }

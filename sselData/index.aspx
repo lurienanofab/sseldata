@@ -1,11 +1,11 @@
 ﻿<%@ Page Title="" Language="C#" MasterPageFile="~/data.master" AutoEventWireup="true" CodeBehind="index.aspx.cs" Inherits="sselData.Index" %>
 
-<%@ Import Namespace="LNF.Models.Data" %>
+<%@ Import Namespace="LNF.Data" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
     <script>
         function logout(){
-            var logoutUrl = '<%=Session["Logout"].ToString()%>';
+            var logoutUrl = '<%=GetLogoutUrl()%>';
             window.top.location = logoutUrl;
             return false;
         }
@@ -19,7 +19,7 @@
         </div>
         <div class="LabelText" style="margin-top: 25px;">
             <strong>Organization:</strong>
-            <asp:DropDownList ID="ddlOrg" runat="server" Height="24" CssClass="DDLText" AutoPostBack="True" OnSelectedIndexChanged="ddlOrg_SelectedIndexChanged">
+            <asp:DropDownList ID="ddlOrg" runat="server" Height="24" CssClass="DDLText" AutoPostBack="True" OnSelectedIndexChanged="DdlOrg_SelectedIndexChanged">
             </asp:DropDownList>
         </div>
     </div>
@@ -52,7 +52,7 @@
                     <asp:Button runat="server" ID="btnAddModClient" CssClass="CommandButton" Text="Add/Modify Client" OnCommand="Button_Command" CommandName="navigate" CommandArgument="Client.aspx" />
                 </td>
                 <td>
-                    <asp:Button runat="server" ID="btnAddModNews" CssClass="CommandButton" Text="Add/Modify News Items" OnCommand="Button_Command" CommandName="navigate" CommandArgument="http://ssel-sched.eecs.umich.edu/news/" />
+                    <asp:Button runat="server" ID="btnAddModNews" CssClass="CommandButton" Text="Add/Modify News Items" OnCommand="Button_Command" CommandName="navigate" CommandArgument="//ssel-sched.eecs.umich.edu/news/" />
                 </td>
                 <td>
                     <asp:Button runat="server" ID="btnGlobalTechnicalField" CssClass="CommandButton" Text="Technical Fields" OnCommand="Button_Command" CommandName="navigate-global" CommandArgument="TechnicalField" />

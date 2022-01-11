@@ -1,6 +1,5 @@
 ﻿using LNF.CommonTools;
 using LNF.Data;
-using LNF.Models.Data;
 using LNF.Repository;
 using System;
 using System.Configuration;
@@ -98,28 +97,30 @@ namespace sselData.AppCode
             return result;
         }
 
-        public static void GetOrgData(UnitOfWorkAdapter dba, DataSet ds)
+        public static void GetOrgData(IDataCommand cmd, DataSet ds)
         {
             if (ds.Tables.Contains("Org"))
                 ds.Tables.Remove("Org");
 
-            dba.MapSchema().ApplyParameters(new { Action = "All" }).FillDataSet(ds, "Org_Select", "Org"); // to speed table lookups
+            cmd.MapSchema().Param("Action", "All").FillDataSet(ds, "sselData.dbo.Org_Select", "Org"); // to speed table lookups
+
+            ds.Tables["Org"].PrimaryKey = new[] { ds.Tables["Org"].Columns["OrgID"] };
         }
 
-        public static void GetAccountData(UnitOfWorkAdapter dba, DataSet ds, int orgId)
+        public static void GetAccountData(IDataCommand cmd, DataSet ds, int orgId)
         {
             if (ds.Tables.Contains("Account"))
                 ds.Tables.Remove("Account");
 
-            dba.MapSchema().ApplyParameters(new { Action = "AllByOrg", OrgID = orgId }).FillDataSet(ds, "Account_Select", "Account");
+            cmd.MapSchema().Param(new { Action = "AllByOrg", OrgID = orgId }).FillDataSet(ds, "Account_Select", "Account");
         }
 
-        public static void GetClientData(UnitOfWorkAdapter dba, DataSet ds)
+        public static void GetClientData(IDataCommand cmd, DataSet ds)
         {
             if (ds.Tables.Contains("Client"))
                 ds.Tables.Remove("Client");
 
-            dba.ApplyParameters(new { Action = "All", sDate = DateTime.Parse("2000-01-01") }).FillDataSet(ds, "Client_Select", "Client");
+            cmd.Param(new { Action = "All", sDate = DateTime.Parse("2000-01-01") }).FillDataSet(ds, "Client_Select", "Client");
             ds.Tables["Client"].Columns.Add("DisplayInfo", typeof(string));
             ds.Tables["Client"].Columns.Add("Reactivated", typeof(bool));
             ds.Tables["Client"].Columns.Add("EnableAccess", typeof(bool));
@@ -129,12 +130,12 @@ namespace sselData.AppCode
             ds.Tables["Client"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
-        public static void GetClientOrgData(UnitOfWorkAdapter dba, DataSet ds)
+        public static void GetClientOrgData(IDataCommand cmd, DataSet ds)
         {
             if (ds.Tables.Contains("ClientOrg"))
                 ds.Tables.Remove("ClientOrg");
 
-            dba.ApplyParameters(new { Action = "All" }).FillDataSet(ds, "ClientOrg_Select", "ClientOrg");
+            cmd.Param(new { Action = "All" }).FillDataSet(ds, "ClientOrg_Select", "ClientOrg");
             ds.Tables["ClientOrg"].Columns.Add("Reactivated", typeof(bool));
             ds.Tables["ClientOrg"].PrimaryKey = new[] { ds.Tables["ClientOrg"].Columns["ClientOrgID"] };
             ds.Tables["ClientOrg"].PrimaryKey[0].AutoIncrement = true;
@@ -142,12 +143,12 @@ namespace sselData.AppCode
             ds.Tables["ClientOrg"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
-        public static void GetClientAccountData(UnitOfWorkAdapter dba, DataSet ds)
+        public static void GetClientAccountData(IDataCommand cmd, DataSet ds)
         {
             if (ds.Tables.Contains("ClientAccount"))
                 ds.Tables.Remove("ClientAccount");
 
-            dba.ApplyParameters(new { Action = "WithAccountName" }).FillDataSet(ds, "ClientAccount_Select", "ClientAccount");
+            cmd.Param(new { Action = "WithAccountName" }).FillDataSet(ds, "ClientAccount_Select", "ClientAccount");
             ds.Tables["ClientAccount"].Columns.Add("Reactivated", typeof(bool));
             ds.Tables["ClientAccount"].PrimaryKey = new[] { ds.Tables["ClientAccount"].Columns["ClientAccountID"] };
             ds.Tables["ClientAccount"].PrimaryKey[0].AutoIncrement = true;
@@ -155,12 +156,12 @@ namespace sselData.AppCode
             ds.Tables["ClientAccount"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
-        public static void GetClientManagerData(UnitOfWorkAdapter dba, DataSet ds, int orgId)
+        public static void GetClientManagerData(IDataCommand cmd, DataSet ds, int orgId)
         {
             if (ds.Tables.Contains("ClientManager"))
                 ds.Tables.Remove("ClientManager");
 
-            dba.ApplyParameters(new { Action = "ByOrg", OrgID = orgId }).FillDataSet(ds, "ClientManager_Select", "ClientManager");
+            cmd.Param(new { Action = "ByOrg", OrgID = orgId }).FillDataSet(ds, "ClientManager_Select", "ClientManager");
             ds.Tables["ClientManager"].Columns.Add("Reactivated", typeof(bool));
             ds.Tables["ClientManager"].PrimaryKey = new[] { ds.Tables["ClientManager"].Columns["ClientManagerID"] };
             ds.Tables["ClientManager"].PrimaryKey[0].AutoIncrement = true;
@@ -168,7 +169,7 @@ namespace sselData.AppCode
             ds.Tables["ClientManager"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
-        public static void GetAddressData(UnitOfWorkAdapter dba, DataSet ds)
+        public static void GetAddressData(IDataCommand cmd, DataSet ds)
         {
             if (ds.Tables.Contains("Address"))
                 ds.Tables.Remove("Address");
@@ -178,39 +179,38 @@ namespace sselData.AppCode
             // when an address is deleted, it is set to false
             // when saving, save address with true and delete those with false
             // when quiting, delete address with false and save those with true
-            dba.MapSchema().ApplyParameters(new { Action = "All" }).FillDataSet(ds, "Address_Select", "Address");
+            cmd.MapSchema().Param(new { Action = "All" }).FillDataSet(ds, "Address_Select", "Address");
             ds.Tables["Address"].Columns.Add("AddDelete", typeof(bool));
         }
 
         public static DataSet GetClientDataSet(int orgId)
         {
-            using (var dba = DA.Current.GetAdapter())
-            {
-                DataSet ds = new DataSet("Client");
+            var cmd = DataCommand.Create();
 
-                // get client data
-                GetClientData(dba, ds);
+            DataSet ds = new DataSet("Client");
 
-                // display name column is appended to facilitate manager display
-                GetClientOrgData(dba, ds);
+            // get client data
+            GetClientData(cmd, ds);
 
-                // manager info
-                GetClientManagerData(dba, ds, orgId);
+            // display name column is appended to facilitate manager display
+            GetClientOrgData(cmd, ds);
 
-                // get org info
-                GetOrgData(dba, ds);
+            // manager info
+            GetClientManagerData(cmd, ds, orgId);
 
-                // get account info
-                GetAccountData(dba, ds, orgId);
+            // get org info
+            GetOrgData(cmd, ds);
 
-                // get client account info
-                GetClientAccountData(dba, ds);
+            // get account info
+            GetAccountData(cmd, ds, orgId);
 
-                // Get the Address
-                GetAddressData(dba, ds);
+            // get client account info
+            GetClientAccountData(cmd, ds);
 
-                return ds;
-            }
+            // Get the Address
+            GetAddressData(cmd, ds);
+
+            return ds;
         }
 
         public static void StoreClientInfo(DataTable dtClient, DataTable dtClientOrg, DataTable dtClientAccount, DataTable dtClientManager, DataTable dtAddress, bool isNewClientEntry, bool addExistingClient, int orgId, string username, string lname, string fname, string mname, int demCitizenId, int demEthnicId, int demRaceId, int demGenderId, int demDisabilityId, int privs, int communities, int technicalInterestId, int roleId, int departmentId, string email, string phone, bool isManager, bool isFinManager, DateTime subsidyStartDate, DateTime newFacultyStartDate, ref int clientId, ref int clientOrgId, out string alertMsg, out bool enableAccessError)
@@ -349,12 +349,12 @@ namespace sselData.AppCode
             {
                 try
                 {
-                    using (var dba = DA.Current.GetAdapter())
-                    {
-                        dba.AddParameter("@Action", "AllowReenable");
-                        dba.AddParameter("@ClientID", cdr.Field<int>("ClientID"));
-                        cdr.SetField("EnableAccess", dba.ExecuteScalar<bool>("NexWatch_Select"));
-                    }
+                    int cid = cdr.Field<int>("ClientID");
+                    bool result = DataCommand.Create()
+                        .Param("Action", "AllowReenable")
+                        .Param("ClientID", cid)
+                        .ExecuteScalar<bool>("NexWatch_Select").Value;
+                    cdr.SetField("EnableAccess", result);
                 }
                 catch (Exception ex)
                 {

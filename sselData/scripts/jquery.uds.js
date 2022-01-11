@@ -3,7 +3,8 @@
         return this.each(function () {
             var $this = $(this);
 
-            var ajaxUrl = 'http://lnf.umich.edu/';
+            //var ajaxUrl = 'http://lnf.umich.edu/';
+            var ajaxUrl = 'https://ssel-apps.eecs.umich.edu/uds';
 
             var umichDirectorySearch = function (uniqname, callback) {
                 $('.umich-directory-search-message', $this).html('');
@@ -11,15 +12,20 @@
                     'url': ajaxUrl,
                     'data': { 'uniqname': uniqname, 'action': 'umich-directory-search', 'format': 'json' },
                     'type': 'GET',
-                    'dataType': 'jsonp',
+                    'dataType': 'json',
                     'success': function (json) {
+                        console.log(json);
                         fillForm(json.data);
                     },
                     'error': function (err) {
-                        var msg = (err.responseText == '') ? err.statusText : err.responseText;
+                        var msg = "";
+                        
+                        if (err.responseJSON && err.responseJSON.message)
+                            msg = err.responseJSON.message;
+                        else
+                            msg = err.statusText || err.responseText || "Unknown error.";
+                        
                         $('.umich-directory-search-message', $this).html(msg);
-                        //console.log('***** Error *****');
-                        //console.log(err);
                     },
                     'complete': function () {
                         if (typeof callback == 'function')

@@ -1,4 +1,5 @@
-﻿using LNF.Models.Data;
+﻿using LNF.Data;
+using LNF.Web.Content;
 using sselData.AppCode;
 using System;
 using System.Configuration;
@@ -8,7 +9,7 @@ using System.Web.UI.WebControls;
 
 namespace sselData
 {
-    public partial class OrgType : LNF.Web.Content.LNFPage
+    public partial class OrgType : OnlineServicesPage
     {
         private DataSet dsOrgType;
         private SqlConnection cnSselData;
@@ -136,24 +137,22 @@ namespace sselData
 
         protected void btnSave_Click(object sender, EventArgs e) //Handles butSave.Click
         {
-            SqlConnection cnSselData = new SqlConnection(ConfigurationManager.ConnectionStrings["cnSselData"].ConnectionString);
+            using (var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["cnSselData"].ConnectionString))
+            using (var insert = new SqlCommand("sselData.dbo.OrgType_Insert", conn) { CommandType = CommandType.StoredProcedure })
+            using (var update = new SqlCommand("sselData.dbo.OrgType_Update", conn) { CommandType = CommandType.StoredProcedure })
+            using (var adap = new SqlDataAdapter() { InsertCommand = insert, UpdateCommand = update })
+            {
+                insert.Parameters.Add("OrgType", SqlDbType.NVarChar, 50, "OrgType");
+                insert.Parameters.Add("ChargeTypeID", SqlDbType.Int, 4, "ChargeTypeID");
 
-            SqlDataAdapter daOrgType = new SqlDataAdapter();
+                update.Parameters.Add("OrgTypeID", SqlDbType.Int, 4, "OrgTypeID");
+                update.Parameters.Add("OrgType", SqlDbType.NVarChar, 50, "OrgType");
+                update.Parameters.Add("ChargeTypeID", SqlDbType.Int, 4, "ChargeTypeID");
 
-            daOrgType.InsertCommand = new SqlCommand("OrgType_Insert", cnSselData);
-            daOrgType.InsertCommand.CommandType = CommandType.StoredProcedure;
-            daOrgType.InsertCommand.Parameters.Add("@OrgType", SqlDbType.NVarChar, 50, "OrgType");
-            daOrgType.InsertCommand.Parameters.Add("@ChargeTypeID", SqlDbType.Int, 4, "ChargeTypeID");
+                adap.Update(dsOrgType, "OrgType");
 
-            daOrgType.UpdateCommand = new SqlCommand("OrgType_Update", cnSselData);
-            daOrgType.UpdateCommand.CommandType = CommandType.StoredProcedure;
-            daOrgType.UpdateCommand.Parameters.Add("@OrgTypeID", SqlDbType.Int, 4, "OrgTypeID");
-            daOrgType.UpdateCommand.Parameters.Add("@OrgType", SqlDbType.NVarChar, 50, "OrgType");
-            daOrgType.UpdateCommand.Parameters.Add("@ChargeTypeID", SqlDbType.Int, 4, "ChargeTypeID");
-
-            daOrgType.Update(dsOrgType, "OrgType");
-
-            btnDiscard_Click(sender, e);
+                btnDiscard_Click(sender, e);
+            }
         }
 
         protected void btnDiscard_Click(object sender, EventArgs e) //Handles butDiscard.Click

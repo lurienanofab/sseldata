@@ -1,16 +1,16 @@
-﻿using LNF.Cache;
+﻿using LNF;
 using LNF.CommonTools;
-using LNF.Models.Data;
-using LNF.Repository;
+using LNF.Data;
 using LNF.Web;
 using LNF.Web.Content;
 using sselData.AppCode;
 using System;
+using System.Data;
 using System.Web.UI.WebControls;
 
 namespace sselData
 {
-    public partial class Index : LNFPage
+    public partial class Index : OnlineServicesPage
     {
         public override ClientPrivilege AuthTypes
         {
@@ -37,7 +37,7 @@ namespace sselData
                 {
                     if (int.TryParse(Request.QueryString["ClientID"].Trim(), out int clientId))
                     {
-                        if (CacheManager.Current.CurrentUser.ClientID != clientId)
+                        if (CurrentUser.ClientID != clientId)
                         {
                             Session.Abandon();
                             Response.Redirect("~");
@@ -46,22 +46,36 @@ namespace sselData
                 }
 
                 // populate site dropdown - preselect using site linked in from
-                using (var dba = DA.Current.GetAdapter())
-                {
-                    var dt = dba.ApplyParameters(new { Action = "CurrentlyActive" }).FillDataTable("Org_Select");
-                    ddlOrg.DataSource = dt;
-                    ddlOrg.DataValueField = "OrgID";
-                    ddlOrg.DataTextField = "OrgName";
-                    ddlOrg.DataBind();
-                }
+                var dt = DataCommand().Param("Action", "CurrentlyActive").FillDataTable("sselData.dbo.Org_Select");
+                ddlOrg.DataSource = dt;
+                ddlOrg.DataValueField = "OrgID";
+                ddlOrg.DataTextField = "OrgName";
+                ddlOrg.DataBind();
 
-                ddlOrg.SelectedValue = Session["OrgID"].ToString();
+                ddlOrg.SelectedValue = GetSelectedOrgID(dt).ToString();
 
                 ButtonControl();
             }
         }
 
-        protected void ddlOrg_SelectedIndexChanged(object sender, EventArgs e)
+        private int GetSelectedOrgID(DataTable dt)
+        {
+            if (Session["OrgID"] != null)
+                return Convert.ToInt32(Session["OrgID"]);
+
+            var rows = dt.Select("PrimaryOrg = 1");
+
+            if (rows.Length > 0)
+            { 
+                var orgId = Convert.ToInt32(rows[0]["OrgID"]);
+                Session["OrgID"] = orgId;
+                return orgId;
+            }
+
+            throw new Exception("Cannot determine selected OrgID (no primary org found).");
+        }
+
+        protected void DdlOrg_SelectedIndexChanged(object sender, EventArgs e)
         {
             Session["OrgID"] = Convert.ToInt32(ddlOrg.SelectedValue);
             ButtonControl();
@@ -69,24 +83,21 @@ namespace sselData
 
         private void ButtonControl()
         {
-            using (var dba = DA.Current.GetAdapter())
-            {
-                var orgId = Convert.ToInt32(Session["OrgID"]);
-                var canAddClient = dba.ApplyParameters(new { Action = "Status", OrgID = orgId }).ExecuteScalar<int>("Org_Select");
+            var orgId = Convert.ToInt32(Session["OrgID"]);
+            var canAddClient = DataCommand().Param("Action", "Status").Param("OrgID", orgId).ExecuteScalar<int>("sselData.dbo.Org_Select").Value;
 
-                // need to have an organization w/ a department to add a client
-                // need to have a client to add an account
+            // need to have an organization w/ a department to add a client
+            // need to have a client to add an account
 
-                // add/modify controls
-                if (canAddClient > 1) btnAddModClient.Enabled = true;
-                if (canAddClient == 3) btnAddModAccount.Enabled = true;
-            }
+            // add/modify controls
+            if (canAddClient > 1) btnAddModClient.Enabled = true;
+            if (canAddClient == 3) btnAddModAccount.Enabled = true;
         }
 
         protected void Button_Command(object sender, CommandEventArgs e)
         {
             string page = e.CommandArgument.ToString();
-            string url = string.Empty;
+            string url;
             switch (e.CommandName)
             {
                 case "navigate":
@@ -113,26 +124,28 @@ namespace sselData
 
         private void NavigateClient(string page)
         {
-            using (var dba = DA.Current.GetAdapter())
-            {
-                int orgId = Convert.ToInt32(Session["OrgID"]);
-                var reader = dba.ApplyParameters(new { Action = "ByOrg", OrgID = orgId }).ExecuteReader("Department_Select");
-                bool noDept = !reader.Read();
+            int orgId = Convert.ToInt32(Session["OrgID"]);
+            var reader = DataCommand().Param("Action", "ByOrg").Param("OrgID", orgId).ExecuteReader("sselData.dbo.Department_Select");
+            bool noDept = !reader.Read();
 
-                if (noDept)
-                    ServerJScript.JSAlert(Page, "Please add a department to the organization before adding clients.");
-                else
-                    Response.Redirect(page);
-            }
+            if (noDept)
+                ServerJScript.JSAlert(Page, "Please add a department to the organization before adding clients.");
+            else
+                Response.Redirect(page);
+
         }
 
-        protected void btnFoobar_Click(object sender, EventArgs e)
+        protected void BtnFoobar_Click(object sender, EventArgs e)
         {
-            using (var dba = DA.Current.GetAdapter())
-            {
-                var enc = new Encryption();
-                dba.ApplyParameters(new { Action = "foobar", Password = enc.EncryptText("foobar") }).ExecuteNonQuery("Client_Update");
-            }
+            var enc = new Encryption();
+            DataCommand().Param("Action", "foobar").Param("Password", enc.EncryptText("foobar")).ExecuteNonQuery("sselData.dbo.Client_Update");
+        }
+
+        protected string GetLogoutUrl()
+        {
+            if (Session["Logout"] == null)
+                Session["Logout"] = Configuration.Current.Context.LoginUrl;
+            return Session["Logout"].ToString();
         }
     }
 }
