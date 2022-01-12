@@ -1,6 +1,5 @@
 ﻿using LNF;
 using LNF.Data;
-using LNF.DataAccess;
 using LNF.PhysicalAccess;
 using LNF.Repository;
 using LNF.Web;
@@ -30,9 +29,8 @@ namespace sselData
         private SqlConnection cnSselData;
         private DataSet dsClient;
         private int selectedClientOrgId; //holds the ClientOrgID that the current user is trying to modify
-        private int oldClientID;
-        private int oldAddressID;
-        //private int oldClientOrgID;
+        private int oldClientId;
+        private int oldAddressId;
 
         public override ClientPrivilege AuthTypes
         {
@@ -81,7 +79,7 @@ namespace sselData
 
             if (Page.IsPostBack)
             {
-                dsClient = ContextBase.GetCacheData();
+                GetCache();
                 if (dsClient == null)
                     Response.Redirect("~");
                 else if (dsClient.DataSetName != "Client")
@@ -162,7 +160,7 @@ namespace sselData
                 //Declare default sort parameter and sort direction
                 ViewState["dgClientSortDir"] = " ASC";
 
-                ContextBase.SetCacheData(dsClient);
+                SetCache();
                 SetPageControlsAndBind(false, false, false, false, true);
             }
         }
@@ -451,14 +449,12 @@ namespace sselData
                             // need to copy element by element - is there a better way?
                             DataRow sdr = FindAddress(defClientAddressId);
                             DataRow dr = dsClient.Tables["Address"].NewRow();
-                            for (int i = 1; i < dsClient.Tables["Address"].Columns.Count; i++) // skip the AddressID column
-                                dr[i] = sdr[i];
-                            dr["AddDelete"] = true;
+                            CopyAddress(sdr, dr, true);
                             dsClient.Tables["Address"].Rows.Add(dr);
                         }
                     }
 
-                    ContextBase.SetCacheData(dsClient);
+                    SetCache();
                     SetPageControlsAndBind(true, false, true, false, false);
                     break;
                 case "Edit":
@@ -500,7 +496,7 @@ namespace sselData
                     ClientSaveButton.CommandArgument = clientId.ToString();
                     ClientSaveButton.Text = "Store modified data";
 
-                    ContextBase.SetCacheData(dsClient);
+                    SetCache();
                     SetPageControlsAndBind(true, false, true, false, false);
 
                     //need to bind again to evoke the data bound event of rdolistBillingType so correct billingtype can be set
@@ -643,8 +639,8 @@ namespace sselData
                                 DataUtility.SetActiveFalse(cdr);
                         }
 
+                        SetCache();
                         SetPageControlsAndBind(false, false, false, false, true);
-                        ContextBase.SetCacheData(dsClient);
                     }
                     break;
             }
@@ -663,6 +659,19 @@ namespace sselData
                 throw new Exception($"Cannot find Address with AddressID = {addressId}");
 
             return dr;
+        }
+
+        private void CopyAddress(DataRow dr1, DataRow dr2, object addDelete)
+        {
+            // skip the AddressID column
+            dr2["InternalAddress"] = dr1["InternalAddress"];
+            dr2["StrAddress1"] = dr1["StrAddress1"];
+            dr2["StrAddress2"] = dr1["StrAddress2"];
+            dr2["City"] = dr1["City"];
+            dr2["State"] = dr1["State"];
+            dr2["Zip"] = dr1["Zip"];
+            dr2["Country"] = dr1["Country"];
+            dr2["AddDelete"] = addDelete;
         }
 
         private bool CanDeleteClientManager(int clientOrgId)
@@ -970,9 +979,7 @@ namespace sselData
                     // need to copy element by element - is there a better way?
                     DataRow sdr = FindAddress(defClientAddressId);
                     DataRow dr = dsClient.Tables["Address"].NewRow();
-                    for (int i = 1; i < dsClient.Tables["Address"].Columns.Count; i++) // skip the AddressID column
-                        dr[i] = sdr[i];
-                    dr["AddDelete"] = true;
+                    CopyAddress(sdr, dr, true);
                     dsClient.Tables["Address"].Rows.Add(dr);
                 }
             }
@@ -1175,14 +1182,14 @@ namespace sselData
                 sdrs = dsClient.Tables["Address"].Select("AddDelete = 0");
                 if (sdrs.Length == 1)
                 {
-                    int AddressID = Convert.ToInt32(sdrs[0]["AddressID"]);
+                    int addressId = Convert.ToInt32(sdrs[0]["AddressID"]);
                     sdrs[0]["AddDelete"] = DBNull.Value;
                     DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", clientId, sessionOrgId));
-                    codrs[0]["ClientAddressID"] = AddressID;
+                    codrs[0]["ClientAddressID"] = addressId;
                 }
             }
 
-            ContextBase.SetCacheData(dsClient);
+            SetCache();
             SetPageControlsAndBind(false, false, false, false, false);
         }
 
@@ -1198,7 +1205,7 @@ namespace sselData
             // use AddDelete to mark new and deleted rows only
             // changes that are saved cannot be undone by quiting at the org layer
 
-            int AddressID;
+            int addressId;
             DataRow sdr;
 
             switch (e.CommandName)
@@ -1223,7 +1230,7 @@ namespace sselData
                         sdr["AddDelete"] = true;
                         dsClient.Tables["Address"].Rows.Add(sdr);
 
-                        ContextBase.SetCacheData(dsClient);
+                        SetCache();
                         SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     }
                     break;
@@ -1246,8 +1253,8 @@ namespace sselData
                     strValidate[2].Comment = "a state.";
                     if (ValidateField(strValidate))
                     {
-                        AddressID = Convert.ToInt32(AddressDataGrid.DataKeys[e.Item.ItemIndex]);
-                        sdr = FindAddress(AddressID);
+                        addressId = Convert.ToInt32(AddressDataGrid.DataKeys[e.Item.ItemIndex]);
+                        sdr = FindAddress(addressId);
                         sdr["InternalAddress"] = ((TextBox)e.Item.FindControl("txtInternalAddress")).Text;
                         sdr["StrAddress1"] = ((TextBox)e.Item.FindControl("txtStrAddress1")).Text;
                         sdr["StrAddress2"] = ((TextBox)e.Item.FindControl("txtStrAddress2")).Text;
@@ -1256,20 +1263,20 @@ namespace sselData
                         sdr["Zip"] = ((TextBox)e.Item.FindControl("txtZip")).Text;
                         sdr["Country"] = ((TextBox)e.Item.FindControl("txtCountry")).Text;
 
-                        ContextBase.SetCacheData(dsClient);
+                        SetCache();
                         AddressDataGrid.EditItemIndex = -1;
                         SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     }
                     break;
                 case "Delete":
-                    AddressID = Convert.ToInt32(AddressDataGrid.DataKeys[e.Item.ItemIndex]);
-                    sdr = FindAddress(AddressID);
+                    addressId = Convert.ToInt32(AddressDataGrid.DataKeys[e.Item.ItemIndex]);
+                    sdr = FindAddress(addressId);
                     if (sdr["AddDelete"] == DBNull.Value) // untouched - mark for deletion
                     {
                         sdr["AddDelete"] = false; // will set rowstate to modified
 
-                        // set addrID in client to 0 - one such row must exist
-                        DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientAddressID = {0}", AddressID));
+                        // set ClientAddressID in ClientOrg to 0 - one such row must exist
+                        DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientAddressID = {0}", addressId));
                         codrs[0]["ClientAddressID"] = 0;
                     }
                     else
@@ -1278,7 +1285,7 @@ namespace sselData
                             sdr.Delete();
                     }
 
-                    ContextBase.SetCacheData(dsClient);
+                    SetCache();
                     SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     break;
             }
@@ -1286,7 +1293,7 @@ namespace sselData
 
         protected void AddressDataGrid_ItemDataBound(object sender, DataGridItemEventArgs e)
         {
-            DataRowView drv = (DataRowView)e.Item.DataItem;
+            var drv = (DataRowView)e.Item.DataItem;
 
             if (e.Item.ItemType == ListItemType.EditItem)
             {
@@ -1386,7 +1393,7 @@ namespace sselData
                             dsClient.Tables["ClientManager"].Rows.Add(cmdr);
                         }
 
-                        ContextBase.SetCacheData(dsClient);
+                        SetCache();
                         SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     }
                     break;
@@ -1417,7 +1424,7 @@ namespace sselData
                     else
                         DataUtility.SetActiveFalse(cmdrs[0]);
 
-                    ContextBase.SetCacheData(dsClient);
+                    SetCache();
                     SetPageControlsAndBind(pAddEdit.Visible, pExisting.Visible, true, false, false);
                     break;
             }
@@ -1609,7 +1616,7 @@ namespace sselData
                 }
             }
 
-            ContextBase.SetCacheData(dsClient);
+            SetCache();
         }
 
         protected void SaveButton_Click(object sender, EventArgs e)
@@ -1638,7 +1645,7 @@ namespace sselData
             daClient.RowUpdating += (sender, e) =>
             {
                 if (e.StatementType == StatementType.Insert)
-                    oldClientID = Convert.ToInt32(e.Row["ClientID"]);
+                    oldClientId = Convert.ToInt32(e.Row["ClientID"]);
             };
 
             daClient.RowUpdated += (sender, e) =>
@@ -1646,7 +1653,7 @@ namespace sselData
                 if (e.StatementType == StatementType.Insert)
                 {
                     // update ClientOrg, exactly one row will match
-                    DataRow[] codrs = dsClient.Tables["ClientOrg"].Select($"ClientID = {oldClientID}");
+                    DataRow[] codrs = dsClient.Tables["ClientOrg"].Select($"ClientID = {oldClientId}");
                     codrs[0]["ClientID"] = e.Row["ClientID"];
                 }
             };
@@ -1699,7 +1706,7 @@ namespace sselData
             daAddress.RowUpdating += (sender, e) =>
             {
                 if (e.StatementType == StatementType.Insert)
-                    oldAddressID = Convert.ToInt32(e.Row["AddressID"]);
+                    oldAddressId = Convert.ToInt32(e.Row["AddressID"]);
             };
 
             daAddress.RowUpdated += (sender, e) =>
@@ -1707,7 +1714,7 @@ namespace sselData
                 if (e.StatementType == StatementType.Insert)
                 {
                     // exactly one row will match
-                    DataRow[] codrs = dsClient.Tables["ClientOrg"].Select($"ClientAddressID = {oldAddressID}");
+                    DataRow[] codrs = dsClient.Tables["ClientOrg"].Select($"ClientAddressID = {oldAddressId}");
                     codrs[0]["ClientAddressID"] = e.Row["AddressID"];
                 }
             };
@@ -1756,12 +1763,12 @@ namespace sselData
                 if (e.StatementType == StatementType.Insert)
                 {
                     // update ClientManager, exactly one row may match
-                    DataRow[] cmdrs = dsClient.Tables["ClientManager"].Select($"ClientOrgID = {oldClientID}");
+                    DataRow[] cmdrs = dsClient.Tables["ClientManager"].Select($"ClientOrgID = {oldClientId}");
                     for (int i = 0; i < cmdrs.Length; i++)
                         cmdrs[i]["ClientOrgID"] = e.Row["ClientOrgID"];
 
                     // update ClientAccount, exactly one row may match
-                    DataRow[] cadrs = dsClient.Tables["ClientAccount"].Select($"ClientOrgID = {oldClientID}");
+                    DataRow[] cadrs = dsClient.Tables["ClientAccount"].Select($"ClientOrgID = {oldClientId}");
                     if (cadrs.Length == 1)
                         cadrs[0]["ClientOrgID"] = e.Row["ClientOrgID"];
 
@@ -1941,6 +1948,16 @@ namespace sselData
                     phCardsNoData.Visible = true;
                 }
             }
+        }
+
+        private void SetCache()
+        {
+            ContextBase.SetCacheData(dsClient);
+        }
+
+        private void GetCache()
+        {
+            dsClient = ContextBase.GetCacheData();
         }
     }
 }

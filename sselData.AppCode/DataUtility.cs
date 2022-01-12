@@ -2,6 +2,7 @@
 using LNF.Data;
 using LNF.Repository;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
@@ -181,6 +182,10 @@ namespace sselData.AppCode
             // when quiting, delete address with false and save those with true
             cmd.MapSchema().Param(new { Action = "All" }).FillDataSet(ds, "Address_Select", "Address");
             ds.Tables["Address"].Columns.Add("AddDelete", typeof(bool));
+            ds.Tables["Address"].PrimaryKey = new[] { ds.Tables["Address"].Columns["AddressID"] };
+            ds.Tables["Address"].PrimaryKey[0].AutoIncrement = true;
+            ds.Tables["Address"].PrimaryKey[0].AutoIncrementSeed = -1;
+            ds.Tables["Address"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
         public static DataSet GetClientDataSet(int orgId)
@@ -249,8 +254,10 @@ namespace sselData.AppCode
 
                 cdr.SetField("UserName", username);
 
-                Encryption enc = new Encryption();
-                cdr.SetField("Password", enc.EncryptText(username));
+                //Encryption enc = new Encryption();
+                //cdr.SetField("Password", enc.EncryptText(username));
+                cdr.SetField("Password", DBNull.Value);
+                cdr.SetField("PasswordHash", DBNull.Value);
 
                 cdr.SetField("DemCitizenID", demCitizenId);
                 cdr.SetField("DemEthnicID", demEthnicId);
@@ -302,7 +309,10 @@ namespace sselData.AppCode
             {
                 if (sdrs[i].Field<bool>("AddDelete")) // addr was added
                 {
-                    codr.SetField("ClientAddressID", sdrs[i].Field<int>("AddressID"));
+                    int addressId = 0;
+                    if (sdrs[i]["AddressID"] != DBNull.Value)
+                        addressId = sdrs[i].Field<int>("AddressID");
+                    codr.SetField("ClientAddressID", addressId);
                     sdrs[i].SetField("AddDelete", DBNull.Value);
                 }
                 else
