@@ -442,13 +442,14 @@ namespace sselData
 
                     // if org has DefClientAddr, add row to addr table with this info
                     DataRow odr = dsClient.Tables["Org"].Rows.Find(sessionOrgId);
-                    if (Convert.ToInt32(odr["DefClientAddressID"]) != 0)
+                    var defClientAddressId = odr.Field<int>("DefClientAddressID");
+                    if (defClientAddressId != 0)
                     {
                         DataRow[] rows = dsClient.Tables["Address"].Select("AddDelete = 1");
                         if (rows.Length == 0)
                         {
                             // need to copy element by element - is there a better way?
-                            DataRow sdr = dsClient.Tables["Address"].Rows.Find(odr["DefClientAddressID"]);
+                            DataRow sdr = FindAddress(defClientAddressId);
                             DataRow dr = dsClient.Tables["Address"].NewRow();
                             for (int i = 1; i < dsClient.Tables["Address"].Columns.Count; i++) // skip the AddressID column
                                 dr[i] = sdr[i];
@@ -647,6 +648,21 @@ namespace sselData
                     }
                     break;
             }
+        }
+
+        private DataRow FindAddress(int addressId)
+        {
+            var select = dsClient.Tables["Address"].Select($"AddressID = {addressId}");
+
+            DataRow dr = null;
+
+            if (select.Length > 0)
+                dr = select[0];
+
+            if (dr == null)
+                throw new Exception($"Cannot find Address with AddressID = {addressId}");
+
+            return dr;
         }
 
         private bool CanDeleteClientManager(int clientOrgId)
@@ -948,10 +964,11 @@ namespace sselData
             {
                 // if org has DefClientAddr, add row to addr table with this info
                 DataRow odr = dsClient.Tables["Org"].Rows.Find(sessionOrgId);
-                if (Convert.ToInt32(odr["DefClientAddressID"]) != 0)
+                var defClientAddressId = odr.Field<int>("DefClientAddressID");
+                if (defClientAddressId != 0)
                 {
                     // need to copy element by element - is there a better way?
-                    DataRow sdr = dsClient.Tables["Address"].Rows.Find(odr["DefClientAddressID"]);
+                    DataRow sdr = FindAddress(defClientAddressId);
                     DataRow dr = dsClient.Tables["Address"].NewRow();
                     for (int i = 1; i < dsClient.Tables["Address"].Columns.Count; i++) // skip the AddressID column
                         dr[i] = sdr[i];
@@ -1230,7 +1247,7 @@ namespace sselData
                     if (ValidateField(strValidate))
                     {
                         AddressID = Convert.ToInt32(AddressDataGrid.DataKeys[e.Item.ItemIndex]);
-                        sdr = dsClient.Tables["Address"].Rows.Find(AddressID);
+                        sdr = FindAddress(AddressID);
                         sdr["InternalAddress"] = ((TextBox)e.Item.FindControl("txtInternalAddress")).Text;
                         sdr["StrAddress1"] = ((TextBox)e.Item.FindControl("txtStrAddress1")).Text;
                         sdr["StrAddress2"] = ((TextBox)e.Item.FindControl("txtStrAddress2")).Text;
@@ -1246,7 +1263,7 @@ namespace sselData
                     break;
                 case "Delete":
                     AddressID = Convert.ToInt32(AddressDataGrid.DataKeys[e.Item.ItemIndex]);
-                    sdr = dsClient.Tables["Address"].Rows.Find(AddressID);
+                    sdr = FindAddress(AddressID);
                     if (sdr["AddDelete"] == DBNull.Value) // untouched - mark for deletion
                     {
                         sdr["AddDelete"] = false; // will set rowstate to modified
