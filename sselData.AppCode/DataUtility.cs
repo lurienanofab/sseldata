@@ -98,30 +98,30 @@ namespace sselData.AppCode
             return result;
         }
 
-        public static void GetOrgData(IDataCommand cmd, DataSet ds)
+        public static void GetOrgData(DataSet ds)
         {
             if (ds.Tables.Contains("Org"))
                 ds.Tables.Remove("Org");
 
-            cmd.MapSchema().Param("Action", "All").FillDataSet(ds, "sselData.dbo.Org_Select", "Org"); // to speed table lookups
+            DataCommand.Create().MapSchema().Param("Action", "All").FillDataSet(ds, "sselData.dbo.Org_Select", "Org"); // to speed table lookups
 
             ds.Tables["Org"].PrimaryKey = new[] { ds.Tables["Org"].Columns["OrgID"] };
         }
 
-        public static void GetAccountData(IDataCommand cmd, DataSet ds, int orgId)
+        public static void GetAccountData(DataSet ds, int orgId)
         {
             if (ds.Tables.Contains("Account"))
                 ds.Tables.Remove("Account");
 
-            cmd.MapSchema().Param(new { Action = "AllByOrg", OrgID = orgId }).FillDataSet(ds, "Account_Select", "Account");
+            DataCommand.Create().MapSchema().Param(new { Action = "AllByOrg", OrgID = orgId }).FillDataSet(ds, "Account_Select", "Account");
         }
 
-        public static void GetClientData(IDataCommand cmd, DataSet ds)
+        public static void GetClientData(DataSet ds)
         {
             if (ds.Tables.Contains("Client"))
                 ds.Tables.Remove("Client");
 
-            cmd.Param(new { Action = "All", sDate = DateTime.Parse("2000-01-01") }).FillDataSet(ds, "Client_Select", "Client");
+            DataCommand.Create().Param(new { Action = "All", sDate = DateTime.Parse("2000-01-01") }).FillDataSet(ds, "Client_Select", "Client");
             ds.Tables["Client"].Columns.Add("DisplayInfo", typeof(string));
             ds.Tables["Client"].Columns.Add("Reactivated", typeof(bool));
             ds.Tables["Client"].Columns.Add("EnableAccess", typeof(bool));
@@ -131,12 +131,12 @@ namespace sselData.AppCode
             ds.Tables["Client"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
-        public static void GetClientOrgData(IDataCommand cmd, DataSet ds)
+        public static void GetClientOrgData(DataSet ds)
         {
             if (ds.Tables.Contains("ClientOrg"))
                 ds.Tables.Remove("ClientOrg");
 
-            cmd.Param(new { Action = "All" }).FillDataSet(ds, "ClientOrg_Select", "ClientOrg");
+            DataCommand.Create().Param(new { Action = "All" }).FillDataSet(ds, "ClientOrg_Select", "ClientOrg");
             ds.Tables["ClientOrg"].Columns.Add("Reactivated", typeof(bool));
             ds.Tables["ClientOrg"].PrimaryKey = new[] { ds.Tables["ClientOrg"].Columns["ClientOrgID"] };
             ds.Tables["ClientOrg"].PrimaryKey[0].AutoIncrement = true;
@@ -144,12 +144,12 @@ namespace sselData.AppCode
             ds.Tables["ClientOrg"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
-        public static void GetClientAccountData(IDataCommand cmd, DataSet ds)
+        public static void GetClientAccountData(DataSet ds)
         {
             if (ds.Tables.Contains("ClientAccount"))
                 ds.Tables.Remove("ClientAccount");
 
-            cmd.Param(new { Action = "WithAccountName" }).FillDataSet(ds, "ClientAccount_Select", "ClientAccount");
+            DataCommand.Create().Param(new { Action = "WithAccountName" }).FillDataSet(ds, "ClientAccount_Select", "ClientAccount");
             ds.Tables["ClientAccount"].Columns.Add("Reactivated", typeof(bool));
             ds.Tables["ClientAccount"].PrimaryKey = new[] { ds.Tables["ClientAccount"].Columns["ClientAccountID"] };
             ds.Tables["ClientAccount"].PrimaryKey[0].AutoIncrement = true;
@@ -157,12 +157,12 @@ namespace sselData.AppCode
             ds.Tables["ClientAccount"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
-        public static void GetClientManagerData(IDataCommand cmd, DataSet ds, int orgId)
+        public static void GetClientManagerData(DataSet ds, int orgId)
         {
             if (ds.Tables.Contains("ClientManager"))
                 ds.Tables.Remove("ClientManager");
 
-            cmd.Param(new { Action = "ByOrg", OrgID = orgId }).FillDataSet(ds, "ClientManager_Select", "ClientManager");
+            DataCommand.Create().Param(new { Action = "ByOrg", OrgID = orgId }).FillDataSet(ds, "ClientManager_Select", "ClientManager");
             ds.Tables["ClientManager"].Columns.Add("Reactivated", typeof(bool));
             ds.Tables["ClientManager"].PrimaryKey = new[] { ds.Tables["ClientManager"].Columns["ClientManagerID"] };
             ds.Tables["ClientManager"].PrimaryKey[0].AutoIncrement = true;
@@ -170,7 +170,7 @@ namespace sselData.AppCode
             ds.Tables["ClientManager"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
-        public static void GetAddressData(IDataCommand cmd, DataSet ds)
+        public static void GetAddressData(DataSet ds)
         {
             if (ds.Tables.Contains("Address"))
                 ds.Tables.Remove("Address");
@@ -180,7 +180,7 @@ namespace sselData.AppCode
             // when an address is deleted, it is set to false
             // when saving, save address with true and delete those with false
             // when quiting, delete address with false and save those with true
-            cmd.MapSchema().Param(new { Action = "All" }).FillDataSet(ds, "Address_Select", "Address");
+            DataCommand.Create().MapSchema().Param(new { Action = "All" }).FillDataSet(ds, "Address_Select", "Address");
             ds.Tables["Address"].Columns.Add("AddDelete", typeof(bool));
             ds.Tables["Address"].PrimaryKey = new[] { ds.Tables["Address"].Columns["AddressID"] };
             ds.Tables["Address"].PrimaryKey[0].AutoIncrement = true;
@@ -188,32 +188,42 @@ namespace sselData.AppCode
             ds.Tables["Address"].PrimaryKey[0].AutoIncrementStep = -1;
         }
 
+        public static void GetDryBoxData(DataSet ds)
+        {
+            if (ds.Tables.Contains("DryBox"))
+                ds.Tables.Remove("DryBox");
+
+            DataCommand.Create(CommandType.Text)
+                .FillDataSet(ds, "SELECT * FROM dbo.v_DryBoxCurrentAssignments", "DryBox");
+        }
+
         public static DataSet GetClientDataSet(int orgId)
         {
-            var cmd = DataCommand.Create();
-
             DataSet ds = new DataSet("Client");
 
             // get client data
-            GetClientData(cmd, ds);
+            GetClientData(ds);
 
             // display name column is appended to facilitate manager display
-            GetClientOrgData(cmd, ds);
+            GetClientOrgData(ds);
 
             // manager info
-            GetClientManagerData(cmd, ds, orgId);
+            GetClientManagerData(ds, orgId);
 
             // get org info
-            GetOrgData(cmd, ds);
+            GetOrgData(ds);
 
             // get account info
-            GetAccountData(cmd, ds, orgId);
+            GetAccountData(ds, orgId);
 
             // get client account info
-            GetClientAccountData(cmd, ds);
+            GetClientAccountData(ds);
 
             // Get the Address
-            GetAddressData(cmd, ds);
+            GetAddressData(ds);
+
+            // Get drybox data
+            GetDryBoxData(ds);
 
             return ds;
         }

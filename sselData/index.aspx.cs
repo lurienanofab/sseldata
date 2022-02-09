@@ -137,8 +137,7 @@ namespace sselData
 
         protected void BtnFoobar_Click(object sender, EventArgs e)
         {
-            var enc = new Encryption();
-            DataCommand().Param("Action", "foobar").Param("Password", enc.EncryptText("foobar")).ExecuteNonQuery("sselData.dbo.Client_Update");
+            DataCommand().Param("Action", "foobar").Param("Password", Encryption.SHA256.EncryptText("foobar")).ExecuteNonQuery("sselData.dbo.Client_Update");
         }
 
         protected string GetLogoutUrl()

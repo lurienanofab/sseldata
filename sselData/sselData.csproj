@@ -120,8 +120,11 @@
     <Content Include="scripts\address-manager.js" />
     <Content Include="scripts\handlebars.min-latest.js" />
     <Content Include="scripts\jquery.uds.js" />
+    <Content Include="scripts\modal\modal.css" />
+    <Content Include="scripts\modal\modal.js" />
     <Content Include="scripts\sseldatautils.js" />
     <Content Include="styles\address-manager.css" />
+    <Content Include="styles\client.css" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>

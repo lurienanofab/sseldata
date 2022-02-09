@@ -231,6 +231,9 @@ namespace sselData
 
         private void SetPageControlsAndBind(bool showAddEditPanel, bool showAddExistingPanel, bool inlineAddressEdit)
         {
+            if (inlineAddressEdit)
+                throw new Exception("This feature is not supported yet.");
+
             bool panelVis = showAddEditPanel | showAddExistingPanel;
 
             // determine which panel to display
@@ -727,21 +730,6 @@ namespace sselData
             SetPageControlsAndBind(false, true, false);
         }
 
-        private bool IsAccountActivatedAndNotSavedYet(string shortcodeVal)
-        {
-            // check if the Account is already activated in Cache  IMPORTANT this checks only in CACHE, not in the actual DB
-            //Dim dv As DataView = dsAccount.Tables("Account").DefaultView
-            //Dim dr As DataRow = dsAccount.Tables("Account").Rows.Find(AccountID)
-            //dv.RowFilter = "Active=True"
-            bool activeState = false;
-            //Dim dr As DataRow = dsAccount.Tables("Account").Rows.Find(shortcodeVal)
-            DataRow[] rows = dsAccount.Tables["Account"].Select(string.Format("ShortCode = '{0}'", shortcodeVal));
-            if (rows.Length > 0)
-                activeState = Convert.ToBoolean(rows[0]["Active"]);
-
-            return activeState;
-        }
-
         protected void AccountStoreButton_Click(object sender, EventArgs e)
         {
             AlertInfo[] strValidate;
@@ -1218,7 +1206,7 @@ namespace sselData
             }
         }
 
-        protected void AddressManager1_UpdateAddress(object sender, UpdateAddressEventArgs e)
+        protected void AddressManager1_UpdateAddress(object _, UpdateAddressEventArgs e)
         {
             DataRow dr = dsAccount.Tables["Address"].Rows.Find(e.Item.AddressID);
 
@@ -1242,7 +1230,7 @@ namespace sselData
             SetPageControlsAndBind(true, false, false);
         }
 
-        protected void AddressManager1_CreateAddress(object sender, CreateAddressEventArgs e)
+        protected void AddressManager1_CreateAddress(object _, CreateAddressEventArgs e)
         {
             var ndr = dsAccount.Tables["Address"].NewRow();
 
@@ -1268,13 +1256,13 @@ namespace sselData
             SetPageControlsAndBind(true, false, false);
         }
 
-        protected void AddressManager1_EditAddress(object sender, EditAddressEventArgs e)
+        protected void AddressManager1_EditAddress(object _1, EditAddressEventArgs _2)
         {
             // Event that fires when an address edit is started. Nothing needs to be done here accept load all the addresses (and other controls)
             SetPageControlsAndBind(true, false, false);
         }
 
-        protected void AddressManager1_DeleteAddress(object sender, EditAddressEventArgs e)
+        protected void AddressManager1_DeleteAddress(object _, EditAddressEventArgs e)
         {
             var dr = dsAccount.Tables["Address"].Rows.Find(e.AddressID);
             if (dr != null) dr.Delete();

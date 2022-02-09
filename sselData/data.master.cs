@@ -4,7 +4,7 @@ using LNF.Web.Content;
 
 namespace sselData
 {
-    public partial class data : OnlineServicesMasterPage
+    public partial class DataMaster : OnlineServicesMasterPage
     {
         public override bool ShowMenu
         {

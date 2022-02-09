@@ -206,12 +206,12 @@
                                                         <button type="button" class="add-address-button">ADD</button>
                                                     </div>
                                                     <div class="edit-delete">
-                                                        <img src="images/im_edit.gif" class="edit-entry" border="0" alt="edit" />
-                                                        <img src="images/im_delete.gif" class="delete-entry" border="0" alt="delete" />
+                                                        <img src="images/im_edit.gif" class="edit-entry" alt="edit" />
+                                                        <img src="images/im_delete.gif" class="delete-entry" alt="delete" />
                                                     </div>
                                                     <div class="update-cancel">
-                                                        <img src="images/im_update.gif" class="update-entry" border="0" alt="update" />
-                                                        <img src="images/im_cancel.gif" class="cancel-entry" border="0" alt="cancel" />
+                                                        <img src="images/im_update.gif" class="update-entry" alt="update" />
+                                                        <img src="images/im_cancel.gif" class="cancel-entry" alt="cancel" />
                                                     </div>
                                                 </div>
                                             </td>

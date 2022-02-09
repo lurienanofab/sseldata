@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlertInfo.cs" />
     <Compile Include="DAL\AccountTypeDA.cs" />
     <Compile Include="DAL\BillingTypeDA.cs" />
     <Compile Include="DAL\UserGroupDA.cs" />

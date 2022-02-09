@@ -1,5 +1,4 @@
-﻿using LNF;
-using LNF.Data;
+﻿using LNF.Data;
 using LNF.PhysicalAccess;
 using LNF.Repository;
 using LNF.Web;
@@ -20,32 +19,26 @@ namespace sselData
 {
     public partial class Client : DataPage
     {
-        struct AlertInfo
-        {
-            public string Comment;
-            public Control FormField;
-        }
-
         private SqlConnection cnSselData;
         private DataSet dsClient;
         private int selectedClientOrgId; //holds the ClientOrgID that the current user is trying to modify
         private int oldClientId;
         private int oldAddressId;
 
-        public override ClientPrivilege AuthTypes
-        {
-            get { return ClientPrivilege.Administrator; }
-        }
-
-        private int GetSessionOrgID()
+        protected int GetSessionOrgID()
         {
             if (Session["OrgID"] == null)
             {
                 Response.Redirect("~", true);
                 return 0;
             }
-            else
-                return Convert.ToInt32(Session["OrgID"]);
+
+            return Convert.ToInt32(Session["OrgID"]);
+        }
+
+        public override ClientPrivilege AuthTypes
+        {
+            get { return ClientPrivilege.Administrator; }
         }
 
         private void FillDemographicsRadioButtonList(IDataCommand cmd, RadioButtonList rbl, string demType)
@@ -347,7 +340,7 @@ namespace sselData
 
             if (clientId > 0)
             {
-                var badges = ServiceProvider.Current.PhysicalAccess.GetBadge(clientId);
+                var badges = Provider.PhysicalAccess.GetBadge(clientId);
 
                 if (badges.Count() > 0)
                 {
@@ -721,6 +714,12 @@ namespace sselData
             pp2.SelectedPeriod = new DateTime(NewFacultyStartDate.Year, NewFacultyStartDate.Month, 1);
         }
 
+        protected bool ClientOrgHasDryBox(int clientOrgId)
+        {
+            var rows = dsClient.Tables["DryBox"].Select($"ClientOrgID = {clientOrgId}");
+            return rows.Length > 0;
+        }
+
         protected void ClientDataGrid_ItemDataBound(object sender, DataGridItemEventArgs e)
         {
             int sessionOrgId = GetSessionOrgID();
@@ -743,7 +742,7 @@ namespace sselData
                         var co = DataSession.Single<Data.ClientOrg>(clientOrgId);
                         if (co != null) //Just in case...
                         {
-                            if (DryBoxRepository.ClientOrgHasDryBox(co.ClientOrgID))
+                            if (ClientOrgHasDryBox(co.ClientOrgID))
                                 lit.Text = string.Format(@"<img src=""images/im_drybox.gif"" title=""DryBox reserved with account: {0}"" />", DryBoxRepository.GetDryBoxClientAccount(co.ClientOrgID).AccountName);
                         }
                     }
@@ -844,6 +843,7 @@ namespace sselData
 
             // check if Client has previous affiliation with org
             DataRow[] codrs = dsClient.Tables["ClientOrg"].Select(string.Format("ClientID = {0} AND OrgID = {1}", ClientDropDownList.SelectedValue, sessionOrgId));
+
             if (codrs.Length == 1)
             {
                 if (codrs[0].RowState == DataRowState.Modified) // must have just been disabled
@@ -986,7 +986,9 @@ namespace sselData
 
             ClientDropDownList.Enabled = false;
             ClientSaveButton.CommandArgument = ClientDropDownList.SelectedValue;
+
             SetPageControlsAndBind(false, true, true, false, false);
+            pExisting.Visible = false;
         }
 
         // This function is the single user save function - it save to the dataset instead of back to database
@@ -1167,8 +1169,7 @@ namespace sselData
 
             panLDAPLookup.Visible = false;
 
-            var cmd = DataCommand();
-            DataUtility.GetClientManagerData(cmd, dsClient, sessionOrgId);
+            DataUtility.GetClientManagerData(dsClient, sessionOrgId);
 
             // remove any addresses that were added
             DataRow[] sdrs = dsClient.Tables["Address"].Select("AddDelete = 1");
@@ -1829,7 +1830,29 @@ namespace sselData
             }
             catch (Exception ex)
             {
-                litError.Text += string.Format(@"<div class=""error"">ClientManager update error:<br />{0}</div>", ex.Message);
+                int clientOrgId, managerOrgId;
+                string msg;
+
+                if (dsClient.Tables["ClientManager"].Rows.Count > 0)
+                {
+                    var dr = dsClient.Tables["ClientManager"].Rows[0];
+                    if (dr.RowState == DataRowState.Added)
+                    {
+                        clientOrgId = Convert.ToInt32(dr["ClientOrgID"]);
+                        managerOrgId = Convert.ToInt32(dr["ManagerOrgID"]);
+                        msg = $"adding ClientOrgID = {clientOrgId}, ManagerOrgID = {managerOrgId}";
+                    }
+                    else
+                    {
+                        msg = $"RowState = {dr.RowState}";
+                    }
+                }
+                else
+                {
+                    msg = "row count is 0";
+                }
+
+                litError.Text += string.Format(@"<div class=""error"">ClientManager update error [{0}]:<br />{1}</div>", msg, ex.Message);
             }
 
             // update the ClientAccount table

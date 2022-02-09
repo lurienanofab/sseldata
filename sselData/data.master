@@ -1,4 +1,4 @@
-﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="data.master.cs" Inherits="sselData.data" %>
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="data.master.cs" Inherits="sselData.DataMaster" %>
 
 <!DOCTYPE html>
 

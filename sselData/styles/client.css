@@ -1,0 +1,134 @@
+﻿.client {
+    padding-top: 20px;
+    padding-left: 20px;
+}
+
+.client-container {
+    border: solid 1px #ccc;
+    padding: 3px;
+    margin-top: 15px;
+}
+
+.client-list-table {
+    border-color: #d3d3d3;
+    border-width: 1px;
+    border-style: Ridge;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .client-list-table > thead > tr > th {
+        background-color: #d3d3d3;
+        white-space: nowrap;
+        font-weight: bold;
+        padding: 3px;
+        text-align: left;
+    }
+
+        .client-list-table > thead > tr > th > .asc::after {
+            content: " \23F6";
+        }
+
+        .client-list-table > thead > tr > th > .desc::after {
+            content: " \23F7";
+        }
+
+    .client-list-table > tbody > tr > td {
+        padding: 3px;
+    }
+
+.striped > tbody > tr:nth-child(even) {
+    background-color: #faf0e6;
+}
+
+.client-list-table .GridText > td {
+    border-top-color: #d3d3d3;
+    border-top-width: 1px;
+    border-top-style: Ridge;
+}
+
+.client-list-table > tfoot > .GridText > td {
+    padding: 3px;
+    background-color: #d3d3d3;
+}
+
+.pager {
+    padding: 5px;
+    margin-top: 3px;
+    border: solid 1px #d3d3d3;
+    white-space: nowrap;
+}
+
+.buttons {
+    padding: 0;
+    margin-top: 3px;
+    white-space: nowrap;
+}
+
+.float-left {
+    float: left;
+}
+
+.float-right {
+    float: right;
+}
+
+.physical-access td {
+    padding: 2px;
+}
+
+.physical-access .disabled {
+    color: #aa0000;
+    background-color: #ffdddd;
+}
+
+.physical-access .no-data {
+    color: #808080;
+}
+
+.form-table {
+    border-collapse: collapse;
+    border: none;
+    width: 100%;
+}
+
+    .form-table td {
+        padding: 3px;
+    }
+
+.address-list,
+.manager-list {
+    border: solid 1px #d3d3d3;
+    border-collapse: collapse;
+}
+
+.address-list {
+    width: 100%;
+}
+
+    .address-list > thead > tr > th,
+    .manager-list > thead > tr > th {
+        background-color: #d3d3d3;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .address-list > tbody > tr > td,
+    .manager-list > tbody > tr > td {
+        border-bottom: solid 1px #d3d3d3;
+    }
+
+    .address-list > tfoot > tr > td,
+    .manager-list > tfoot > tr > td {
+        background-color: #d3d3d3;
+        white-space: nowrap;
+    }
+
+.StoreButton,
+.QuitStoreButton {
+    font-size: 12px;
+}
+
+.QuitStoreButton {
+    margin-left: 3px;
+}
