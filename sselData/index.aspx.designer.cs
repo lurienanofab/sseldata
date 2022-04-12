@@ -7,11 +7,13 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace sselData {
-    
-    
-    public partial class Index {
-        
+namespace sselData
+{
+
+
+    public partial class Index
+    {
+
         /// <summary>
         /// ddlOrg control.
         /// </summary>
@@ -20,7 +22,16 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlOrg;
-        
+
+        /// <summary>
+        /// divSettings control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divSettings;
+
         /// <summary>
         /// btnAddModAccount control.
         /// </summary>
@@ -29,25 +40,7 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnAddModAccount;
-        
-        /// <summary>
-        /// btnPassword control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnPassword;
-        
-        /// <summary>
-        /// btnGlobalFundingSource control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnGlobalFundingSource;
-        
+
         /// <summary>
         /// btnAddModClient control.
         /// </summary>
@@ -56,25 +49,7 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnAddModClient;
-        
-        /// <summary>
-        /// btnAddModNews control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnAddModNews;
-        
-        /// <summary>
-        /// btnGlobalTechnicalField control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnGlobalTechnicalField;
-        
+
         /// <summary>
         /// btnAddModOrg control.
         /// </summary>
@@ -83,16 +58,7 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnAddModOrg;
-        
-        /// <summary>
-        /// btnGlobalSpecialTopic control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnGlobalSpecialTopic;
-        
+
         /// <summary>
         /// btnClientAccountAssign control.
         /// </summary>
@@ -101,7 +67,88 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnClientAccountAssign;
-        
+
+        /// <summary>
+        /// divMisc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divMisc;
+
+        /// <summary>
+        /// btnPassword control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnPassword;
+
+        /// <summary>
+        /// btnAddModNews control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAddModNews;
+
+        /// <summary>
+        /// btnAlerts control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAlerts;
+
+        /// <summary>
+        /// btnFeeds control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnFeeds;
+
+        /// <summary>
+        /// divGlobal control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divGlobal;
+
+        /// <summary>
+        /// btnGlobalFundingSource control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnGlobalFundingSource;
+
+        /// <summary>
+        /// btnGlobalTechnicalField control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnGlobalTechnicalField;
+
+        /// <summary>
+        /// btnGlobalSpecialTopic control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnGlobalSpecialTopic;
+
         /// <summary>
         /// btnOrgType control.
         /// </summary>
@@ -110,7 +157,7 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnOrgType;
-        
+
         /// <summary>
         /// btnChargeType control.
         /// </summary>
@@ -119,7 +166,7 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnChargeType;
-        
+
         /// <summary>
         /// btnGlobalRole control.
         /// </summary>
@@ -128,16 +175,7 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnGlobalRole;
-        
-        /// <summary>
-        /// btnLogout control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnLogout;
-        
+
         /// <summary>
         /// btnGlobalCommunity control.
         /// </summary>
@@ -146,5 +184,23 @@ namespace sselData {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnGlobalCommunity;
+
+        /// <summary>
+        /// divAppControl control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divAppControl;
+
+        /// <summary>
+        /// btnLogout control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLogout;
     }
 }
